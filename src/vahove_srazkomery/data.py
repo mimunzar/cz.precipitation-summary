@@ -14,11 +14,12 @@ def iter_rain_row(fpath):
 
 
 def iter_rain_data(rain_row_it):
-    col_data = cl.defaultdict(list)
+    vals_by_col = cl.defaultdict(list)
     for r in rain_row_it:
         for c in r:
-            col_data[c.column_letter].append(c.value or 0)
-    return it.chain.from_iterable(col_data[k] for k in sorted(col_data.keys()))
+            vals_by_col[c.column_letter].append(c.value or 0)
+    col_vals = (vals_by_col[k] for k in sorted(vals_by_col.keys()))
+    return enumerate(it.chain.from_iterable(col_vals))
 
 
 if __name__ == '__main__':

@@ -2,6 +2,7 @@
 
 import collections as cl
 import itertools   as it
+import operator    as op
 
 
 def sliding_window(n, iterable):
@@ -12,4 +13,8 @@ def sliding_window(n, iterable):
     for x in iterable:
         window.append(x)
         yield tuple(window)
+
+
+def dedupe(iterable):
+    return map(op.itemgetter(0), it.groupby(iterable))
 
