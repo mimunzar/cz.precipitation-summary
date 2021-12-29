@@ -21,8 +21,3 @@ def iter_rain_data(rain_row_it):
     col_vals = (vals_by_col[k] for k in sorted(vals_by_col.keys()))
     return enumerate(it.chain.from_iterable(col_vals))
 
-
-if __name__ == '__main__':
-    file = '.git/VAHOVE_SRAZKOMERY/data_cast_1/B1HOLE01_SRA10M.xlsx'
-    data = iter_rain_data(iter_rain_row(file))
-
