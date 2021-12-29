@@ -1,0 +1,6 @@
+name: cz.vahove-srazkomery
+channels:
+  - defaults
+dependencies:
+  - openpyxl
+
