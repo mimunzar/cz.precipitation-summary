@@ -4,16 +4,16 @@
 import src.vahove_srazkomery.rain as rain
 
 
-def test_iter_rain_events():
-    assert list(rain.iter_rain_events(0, 1, [])) == []
-    rain_data = [(0, 1)]
-    assert list(rain.iter_rain_events(1, 1, rain_data)) == [
+def test_iter_gt_periods():
+    assert list(rain.iter_gt_periods(.9, 0, [])) == []
+    data = [(0, 1)]
+    assert list(rain.iter_gt_periods(.9, 1, data)) == [
             ((0, 1),)]
-    rain_data = [(0, 0), (1, 1)]
-    assert list(rain.iter_rain_events(2, 1, rain_data)) == [
+    data = [(0, 0), (1, 1)]
+    assert list(rain.iter_gt_periods(.9, 2, data)) == [
             ((0, 0), (1, 1))]
-    rain_data = [(0, 0), (1, 1), (2, 1)]
-    assert list(rain.iter_rain_events(2, 1, rain_data)) == [
+    data = [(0, 0), (1, 1), (2, 1)]
+    assert list(rain.iter_gt_periods(.9, 2, data)) == [
             ((0, 0), (1, 1)),
             ((1, 1), (2, 1))]
 
@@ -47,15 +47,19 @@ def test_merge_consecutive_events():
 
 
 def test_iter_rains():
-    assert list(rain.iter_rains(2, 1, [])) == []
-    rain_data = [(0, 0), (1, 1)]
-    assert list(rain.iter_rains(2, 1, rain_data)) == [
-            [(0, 0), (1, 1)]]
-    rain_data = [(0, 0), (1, 1), (2, 1)]
-    assert list(rain.iter_rains(2, 1, rain_data)) == [
-            [(0, 0), (1, 1), (2, 1)]]
-    rain_data = [(0, 0), (1, 0), (2, 1), (3, 0), (4, 0), (5, 1)]
-    assert list(rain.iter_rains(2, 1, rain_data)) == [
-            [(1, 0), (2, 1), (3, 0)],
-            [(4, 0), (5, 1)]]
+    assert list(rain.iter_rains(.9, 2, [])) == []
+    data = [(0, 0), (1, 1)]
+    assert list(rain.iter_rains(.9, 2, data)) == [
+            ((0, 0), (1, 1))]
+    data = [(0, 0), (1, 1), (2, 1)]
+    assert list(rain.iter_rains(.9, 2, data)) == [
+            ((0, 0), (1, 1), (2, 1))]
+    data = [(0, 0), (1, 0), (2, 1), (3, 0), (4, 0), (5, 1)]
+    assert list(rain.iter_rains(.9, 2, data)) == [
+            ((1, 0), (2, 1), (3, 0)),
+            ((4, 0), (5, 1))]
+
+
+def test_is_heavy():
+    pass
 
