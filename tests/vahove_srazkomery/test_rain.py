@@ -11,11 +11,11 @@ def test_iter_gt_periods():
             ((0, 1),)]
     data = [(0, 0), (1, 1)]
     assert list(rain.iter_gt_periods(.9, 2, data)) == [
-            ((0, 0), (1, 1))]
+            ((0, 0), (1, 1),)]
     data = [(0, 0), (1, 1), (2, 1)]
     assert list(rain.iter_gt_periods(.9, 2, data)) == [
-            ((0, 0), (1, 1)),
-            ((1, 1), (2, 1))]
+            ((0, 0), (1, 1),),
+            ((1, 1), (2, 1),)]
 
 
 def test_iter_consecutive_events():
@@ -46,20 +46,23 @@ def test_merge_consecutive_events():
             (0, 0), (1, 0), (2, 0), (3, 0)]
 
 
+def test_trim_event():
+    assert list(rain.trim_event(((0, 0),))) == []
+    assert list(rain.trim_event(((0, 1), (1, 0)))) == [(0, 1)]
+    assert list(rain.trim_event(((0, 1), (1, 0), (2, 0)))) == [(0, 1)]
+    assert list(rain.trim_event(((0, 1), (1, 0), (2, 1)))) == [(0, 1), (1, 0), (2, 1)]
+
+
 def test_iter_rains():
     assert list(rain.iter_rains(.9, 2, [])) == []
     data = [(0, 0), (1, 1)]
     assert list(rain.iter_rains(.9, 2, data)) == [
-            ((0, 0), (1, 1))]
+            ((1, 1),)]
     data = [(0, 0), (1, 1), (2, 1)]
     assert list(rain.iter_rains(.9, 2, data)) == [
-            ((0, 0), (1, 1), (2, 1))]
-    data = [(0, 0), (1, 0), (2, 1), (3, 0), (4, 0), (5, 1)]
+            ((1, 1), (2, 1),)]
+    data = [(0, 0), (1, 1), (2, 1), (3, 0), (4, 0), (5, 1)]
     assert list(rain.iter_rains(.9, 2, data)) == [
-            ((1, 0), (2, 1), (3, 0)),
-            ((4, 0), (5, 1))]
-
-
-def test_is_heavy():
-    pass
+            ((1, 1), (2, 1),),
+            ((5, 1),)]
 

@@ -29,8 +29,14 @@ def merge_consecutive_events(events_it):
     return util.dedupe(events_by_time)
 
 
+def trim_event(data_it):
+    doesnt_rain = lambda e: not e[1]
+    trim_start  = lambda i: list(it.dropwhile(doesnt_rain, i))
+    return reversed(trim_start(reversed(trim_start(data_it))))
+
+
 def iter_rains(amount, period, data_it):
     rain_events  = iter_gt_periods(amount, period, data_it)
     consecutives = iter_consecutive_events(rain_events)
-    return (tuple(merge_consecutive_events(c)) for c in consecutives)
+    return (tuple(trim_event(merge_consecutive_events(c))) for c in consecutives)
 
