@@ -2,6 +2,22 @@
 
 
 import src.vahove_srazkomery.rain as rain
+import pytest
+
+
+def test_total_amount():
+    assert rain.total_amount(tuple()) == 0
+    assert rain.total_amount(((0, 1),)) == 1
+    assert rain.total_amount(((0, 1), (1, 2))) == 3
+
+
+def test_max_period():
+    with pytest.raises(ValueError):
+        rain.max_period(1, tuple())
+    #^ There is no 1-length period in empty sequence
+    assert rain.max_period(1, ((0, 1),)) == ((0, 1),)
+    assert rain.max_period(1, ((0, 1), (1, 2),)) == ((1, 2),)
+    assert rain.max_period(2, ((0, 1), (1, 2), (2, 3))) == ((1, 2), (2, 3),)
 
 
 def test_iter_gt_periods():
