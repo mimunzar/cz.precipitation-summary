@@ -22,5 +22,6 @@ def iter_heavy_rains(data_it):
 
 if __name__ == '__main__':
     file = '.git/VAHOVE_SRAZKOMERY/data_cast_1/B1HOLE01_SRA10M.xlsx'
-    result = iter_heavy_rains(data.from_file(file))
+    station, data_it = data.from_file(file)
+    data.write_rain_sheet('sample.xlsx', station, iter_heavy_rains(data_it))
 
