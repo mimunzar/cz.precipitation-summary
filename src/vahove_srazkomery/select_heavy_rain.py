@@ -4,18 +4,14 @@ import src.vahove_srazkomery.data as data
 import src.vahove_srazkomery.rain as rain
 
 
-def minutes(n):
-    return n//10
-
-
 def is_heavy_rain(data_it):
-    period_of_gt_rain = list(rain.iter_gt_periods(8.3, minutes(20), data_it))
+    period_of_gt_rain = list(rain.iter_gt_periods(8.3, data.minutes(20), data_it))
     exceeded_amount   = 12.5 < rain.total_amount(data_it)
     return exceeded_amount or period_of_gt_rain
 
 
 def iter_heavy_rains(data_it):
-    hours    = lambda n: n*minutes(60)
+    hours    = lambda n: n*data.minutes(60)
     rains_it = rain.iter_rains(1.27, hours(6), data_it)
     return filter(is_heavy_rain, rains_it)
 

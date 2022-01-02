@@ -2,6 +2,8 @@
 
 import openpyxl as xl
 
+import src.vahove_srazkomery.rain as rain
+
 import collections as cl
 import datetime    as dt
 import functools   as ft
@@ -29,15 +31,13 @@ def from_file(fpath):
     return (ws['A1'].value, iter_data)
 
 
-def make_formatter(dt_offset):
+def make_formatter(fields, fn_time):
     delta  = dt.timedelta(minutes=10)
-    offset = int((dt_offset - dt.datetime(1970, 1, 1))/delta)
-    header = ['id', 'rok', 'měsíc', 'den', 'termín', 'SRA10M']
-    def formatter(idx, rain_val):
-        t, x = rain_val
-        d    = dt.datetime.fromtimestamp((offset + t)*delta.seconds)
-        return [idx, d.year, d.month, d.day, f'{d.hour:02}:{d.minute:02}', x]
-    return (header, formatter)
+    offset = int((dt.datetime(2010, 1, 1) - dt.datetime(1970, 1, 1))/delta)
+    def formatter(idx, val):
+        d = dt.datetime.fromtimestamp((offset + fn_time(val))*delta.seconds)
+        return tuple(fn(idx, d, val) for fn in fields.values())
+    return formatter
 
 
 def make_cell(ws, val, style={}):
@@ -48,26 +48,78 @@ def make_cell(ws, val, style={}):
     return c
 
 
-def write_selected_events(station, ws, event_it):
-    header, formatter = make_formatter(dt.datetime(2010, 1, 1))
-    bold              = xl.styles.Font(name='Calibri', bold=True)
-    ws.append(list(map(ft.partial(make_cell, ws, style={'font': bold}), [station])))
-    ws.append(list(map(ft.partial(make_cell, ws, style={'font': bold}), header)))
+def write_sheet_header(ws, station, labels):
+    font_setting = xl.styles.Font(name='Calibri', bold=True)
+    val_in_bold  = lambda x: make_cell(ws, x, style={'font': font_setting})
+    row_in_bold  = lambda i: list(map(val_in_bold, i))
+    ws.append(row_in_bold([station]))
+    ws.append(row_in_bold(labels))
 
-    left = xl.styles.Alignment(horizontal='left')
-    fill = lambda c: xl.styles.PatternFill('solid', fgColor=c)
-    cell_fill_1 = ft.partial(make_cell, ws, style={'fill': fill('d5f5c6'), 'alignment': left})
-    cell_fill_2 = ft.partial(make_cell, ws, style={'fill': fill('f2c9a3'), 'alignment': left})
-    for i, event in enumerate(event_it, start=1):
-        for val in event:
-            cell_fill = cell_fill_1 if i % 2 else cell_fill_2
-            ws.append(list(map(cell_fill, formatter(i, val))))
+
+def write_sheet_data(ws, fn_event_to_rows, event_it):
+    left          = xl.styles.Alignment(horizontal='left')
+    fill          = lambda c: xl.styles.PatternFill('solid', fgColor=c)
+    val_with_fill = lambda f, x: make_cell(ws, x,style={'fill': f, 'alignment': left})
+    row_with_fill = lambda f, i: [val_with_fill(f, x) for x in i]
+    fill_event_it = zip(it.cycle([fill('d5f5c6'), fill('f2c9a3')]), event_it)
+    for i, (fill, event) in enumerate(fill_event_it, start=1):
+        for row in fn_event_to_rows(i, event):
+            ws.append(row_with_fill(fill, row))
+
+
+def write_selected_events(ws, station, event_it):
+    fields = cl.OrderedDict({
+        'id'    : lambda i, _, __: i,
+        'rok'   : lambda _, d, __: d.year,
+        'měsíc' : lambda _, d, __: d.month,
+        'den'   : lambda _, d, __: d.day,
+        'termín': lambda _, d, __: f'{d.hour:02}:{d.minute:02}',
+        'SRA10M': lambda _, __, r: r[1],
+    })
+    write_sheet_header(ws, station, fields.keys())
+    formatter     = make_formatter(fields, lambda v: v[0])
+    event_to_rows = lambda i, e: (formatter(i, v) for v in e)
+    write_sheet_data(ws, event_to_rows, event_it)
+
+
+def minutes(n):
+    return n//10
+
+
+def format_event_duration(n):
+    delta = n*dt.timedelta(minutes=10)
+    time  = (dt.datetime.min + delta).time()
+    return f'{delta.days:02}:{time.hour:02}:{time.minute:02}'
+
+
+def write_events_sumary(ws, station, event_it):
+    fields = cl.OrderedDict({
+        'id'                : lambda i, _, __: i,
+        'rok'               : lambda _, d, __: d.year,
+        'měsíc'             : lambda _, d, __: d.month,
+        'den'               : lambda _, d, __: d.day,
+        'trvání [DD:HH:MM]' : lambda _, __, e: format_event_duration(len(e)),
+        'celkový úhrn [mm]' : lambda _, __, e: round(rain.total_amount(e), 2),
+        '20 min. max. [mm]' : lambda _, __, e: \
+                round(rain.total_amount(rain.max_period(minutes(20), e)), 2),
+        '30 min. max. [mm]' : lambda _, __, e: \
+                round(rain.total_amount(rain.max_period(minutes(30), e)), 2),
+    })
+    write_sheet_header(ws, station, fields.keys())
+    formatter     = make_formatter(fields, lambda e: e[0][0])
+    event_to_rows = lambda i, e: [formatter(i, e)]
+    write_sheet_data(ws, event_to_rows, event_it)
 
 
 def write_rain_sheet(fpath, station, event_it):
-    wb = xl.Workbook()
-    ws = wb.active
-    ws.title = 'selected_events'
-    write_selected_events(station, ws, event_it)
+    wb                   = xl.Workbook()
+    it_1, it_2           = it.tee(event_it)
+    selected_sheet       = wb.active
+    selected_sheet.title = 'selected_events'
+    write_selected_events(selected_sheet, station, it_1)
+
+    summary_sheet       = wb.create_sheet()
+    summary_sheet.title = 'events_summary'
+    write_events_sumary(summary_sheet, station, it_2)
     wb.save(fpath)
 
