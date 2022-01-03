@@ -25,7 +25,7 @@ def iter_rain_rows_data(rain_row_it):
 
 
 def from_file(fpath):
-    wb = xl.load_workbook(filename=fpath, read_only=True)
+    wb = xl.load_workbook(filename=fpath)
     ws = wb.worksheets[0]
     iter_data  = iter_rain_rows_data(iter_rain_rows(ws.iter_rows()))
     return (ws['A1'].value, iter_data)

@@ -12,7 +12,7 @@ def total_amount(data_it):
 
 def max_period(period, data_it):
     events = util.sliding_window(period, data_it)
-    return max(events, key=total_amount)
+    return max(events, key=total_amount, default=tuple())
 
 
 def iter_gt_periods(amount, period, data_it):
