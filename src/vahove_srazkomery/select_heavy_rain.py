@@ -6,6 +6,7 @@ import sys
 
 import src.vahove_srazkomery.data as data
 import src.vahove_srazkomery.rain as rain
+import src.vahove_srazkomery.util as util
 
 
 def parse_args(args_it):
@@ -35,22 +36,30 @@ def iter_input_output_files(i_dir, o_dir):
     return ((input_path(n), output_path(n)) for n in iter_input_filenames(i_dir))
 
 
+def iter_pending_work(i_dir, o_dir):
+    input_files = list(iter_input_output_files(i_dir, o_dir))
+    total_work  = len(input_files)
+    return (((total_work, done), io) for done, io in enumerate(input_files))
+
+
 def is_heavy_rain(data_it):
-    period_of_gt_rain = list(rain.iter_gt_periods(8.3, data.minutes(20), data_it))
+    period_of_gt_rain = list(rain.iter_gt_periods(8.3, util.minutes(20), data_it))
     exceeded_amount   = 12.5 < rain.total_amount(data_it)
     return exceeded_amount or period_of_gt_rain
 
 
 def iter_heavy_rains(data_it):
-    hours    = lambda n: n*data.minutes(60)
-    rains_it = rain.iter_rains(1.27, hours(6), data_it)
+    rains_it = rain.iter_rains(1.27, util.hours(6), data_it)
     return filter(is_heavy_rain, rains_it)
 
 
 if __name__ == '__main__':
     i_dir, o_dir = parse_args(sys.argv[1:])
     os.makedirs(o_dir, exist_ok=True)
-    for i_path, o_path in iter_input_output_files(i_dir, o_dir):
+    for ((total, done), (i_path, o_path)) in iter_pending_work(i_dir, o_dir):
+        print(f'{util.print_progress(40, total, done)} ({os.path.basename(i_path)})', end='\r')
         station, data_it = data.from_file(i_path)
         data.write_rain_sheet(o_path, station, iter_heavy_rains(data_it))
+        print(f'{util.print_progress(40, total, done + 1)} ({os.path.basename(i_path)})', end='\r')
+    print()
 

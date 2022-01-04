@@ -3,10 +3,10 @@
 import openpyxl as xl
 
 import src.vahove_srazkomery.rain as rain
+import src.vahove_srazkomery.util as util
 
 import collections as cl
 import datetime    as dt
-import functools   as ft
 import itertools   as it
 
 
@@ -82,10 +82,6 @@ def write_selected_events(ws, station, event_it):
     write_sheet_data(ws, event_to_rows, event_it)
 
 
-def minutes(n):
-    return n//10
-
-
 def format_event_duration(n):
     delta = n*dt.timedelta(minutes=10)
     time  = (dt.datetime.min + delta).time()
@@ -101,9 +97,9 @@ def write_events_sumary(ws, station, event_it):
         'trvání [DD:HH:MM]' : lambda _, __, e: format_event_duration(len(e)),
         'celkový úhrn [mm]' : lambda _, __, e: round(rain.total_amount(e), 2),
         '20 min. max. [mm]' : lambda _, __, e: \
-                round(rain.total_amount(rain.max_period(minutes(20), e)), 2),
+                round(rain.total_amount(rain.max_period(util.minutes(20), e)), 2),
         '30 min. max. [mm]' : lambda _, __, e: \
-                round(rain.total_amount(rain.max_period(minutes(30), e)), 2),
+                round(rain.total_amount(rain.max_period(util.minutes(30), e)), 2),
     })
     write_sheet_header(ws, station, fields.keys())
     formatter     = make_formatter(fields, lambda e: e[0][0])
