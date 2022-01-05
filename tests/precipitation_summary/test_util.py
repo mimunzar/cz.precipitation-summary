@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import src.vahove_srazkomery.util as util
+import src.precipitation_summary.util as util
 
 
 def test_sliding_window():

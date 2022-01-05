@@ -1,4 +1,4 @@
-name: cz.vahove-srazkomery
+name: cz.precipitation-summary
 channels:
   - defaults
 dependencies:

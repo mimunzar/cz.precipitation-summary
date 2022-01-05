@@ -2,8 +2,8 @@
 
 import openpyxl as xl
 
-import src.vahove_srazkomery.rain as rain
-import src.vahove_srazkomery.util as util
+import src.precipitation_summary.rain as rain
+import src.precipitation_summary.util as util
 
 import collections as cl
 import datetime    as dt
@@ -24,7 +24,7 @@ def iter_rain_rows_data(rain_row_it):
     return enumerate(it.chain.from_iterable(joined_cols))
 
 
-def from_file(fpath):
+def from_sheet(fpath):
     wb = xl.load_workbook(filename=fpath)
     ws = wb.worksheets[0]
     iter_data  = iter_rain_rows_data(iter_rain_rows(ws.iter_rows()))
@@ -107,7 +107,7 @@ def write_events_sumary(ws, station, event_it):
     write_sheet_data(ws, event_to_rows, event_it)
 
 
-def write_rain_sheet(fpath, station, event_it):
+def write_statistic_sheet(fpath, station, event_it):
     wb                   = xl.Workbook()
     it_1, it_2           = it.tee(event_it)
     selected_sheet       = wb.active

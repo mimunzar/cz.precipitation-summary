@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
 import argparse
+import functools as ft
 import os
 import sys
 
-import src.vahove_srazkomery.data as data
-import src.vahove_srazkomery.rain as rain
-import src.vahove_srazkomery.util as util
+import src.precipitation_summary.data as data
+import src.precipitation_summary.rain as rain
+import src.precipitation_summary.util as util
 
 
 def parse_args(args_it):
@@ -30,16 +31,12 @@ def output_filename(filename):
     return f'{path}.stat{extension}'
 
 
-def iter_input_output_files(i_dir, o_dir):
+def iter_pending_files(i_dir, o_dir):
     input_path  = lambda s: os.path.join(i_dir, s)
     output_path = lambda s: os.path.join(o_dir, output_filename(s))
-    return ((input_path(n), output_path(n)) for n in iter_input_filenames(i_dir))
-
-
-def iter_pending_work(i_dir, o_dir):
-    input_files = list(iter_input_output_files(i_dir, o_dir))
-    total_work  = len(input_files)
-    return (((total_work, done), io) for done, io in enumerate(input_files))
+    input_files = list(iter_input_filenames(i_dir))
+    total_files = len(input_files)
+    return ((input_path(f), output_path(f), total_files) for f in input_files)
 
 
 def is_heavy_rain(data_it):
@@ -53,13 +50,25 @@ def iter_heavy_rains(data_it):
     return filter(is_heavy_rain, rains_it)
 
 
+def write_statistic_file(i_path, o_path):
+    station, data_it = data.from_sheet(i_path)
+    data.write_statistic_sheet(o_path, station, iter_heavy_rains(data_it))
+
+
+def process_file(done, x):
+    i_path, o_path, total = x
+    current_file = os.path.basename(i_path)
+    progress_bar = lambda done: util.print_progress(40, total, done)
+    print(f'{progress_bar(done)} ({current_file})', end='\r')
+    write_statistic_file(i_path, o_path)
+    done += 1
+    print(f'{progress_bar(done)} ({current_file})', end='\r')
+    return done
+
+
 if __name__ == '__main__':
     i_dir, o_dir = parse_args(sys.argv[1:])
     os.makedirs(o_dir, exist_ok=True)
-    for ((total, done), (i_path, o_path)) in iter_pending_work(i_dir, o_dir):
-        print(f'{util.print_progress(40, total, done)} ({os.path.basename(i_path)})', end='\r')
-        station, data_it = data.from_file(i_path)
-        data.write_rain_sheet(o_path, station, iter_heavy_rains(data_it))
-        print(f'{util.print_progress(40, total, done + 1)} ({os.path.basename(i_path)})', end='\r')
+    ft.reduce(process_file, iter_pending_files(i_dir, o_dir), 0)
     print()
 

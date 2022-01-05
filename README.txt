@@ -1,5 +1,5 @@
-Souhrny Srazek
-==============
+Precipitation Summary
+=====================
 
 ** The tool is still a work in progress **
 
@@ -15,6 +15,8 @@ command:
 Usage
 -----
 
+
 Possible Improvements
 ---------------------
+
 

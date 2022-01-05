@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 
-import src.vahove_srazkomery.rain as rain
+import src.precipitation_summary.rain as rain
 import pytest
 
 

@@ -3,7 +3,7 @@
 import itertools as it
 import operator  as op
 
-import src.vahove_srazkomery.util as util
+import src.precipitation_summary.util as util
 
 
 def total_amount(data_it):
