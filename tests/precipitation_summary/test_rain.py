@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 
-
 import src.precipitation_summary.rain as rain
-import pytest
 
 
 def test_total_amount():

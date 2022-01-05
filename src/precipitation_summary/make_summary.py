@@ -14,9 +14,9 @@ def parse_args(args_it):
     parser = argparse.ArgumentParser(
             description='Allows to create statistics about heavy rains')
     parser.add_argument('-i', '--input_dir',
-            required=True, help='The director which contains measurement files')
+            required=True, help='The directory which contains measurement files')
     parser.add_argument('-o', '--output_dir',
-            required=True, help='The director which will contain statistic files')
+            required=True, help='The directory which will contain statistic files')
     parsed = vars(parser.parse_args(args_it))
     return (parsed['input_dir'], parsed['output_dir'])
 
@@ -40,7 +40,8 @@ def iter_pending_files(i_dir, o_dir):
 
 
 def is_heavy_rain(data_it):
-    period_of_gt_rain = list(rain.iter_gt_periods(8.3, util.minutes(20), data_it))
+    data_it           = tuple(data_it)
+    period_of_gt_rain = 0 < len(list(rain.iter_gt_periods(8.3, util.minutes(20), data_it)))
     exceeded_amount   = 12.5 < rain.total_amount(data_it)
     return exceeded_amount or period_of_gt_rain
 

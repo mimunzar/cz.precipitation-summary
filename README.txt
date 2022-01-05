@@ -26,7 +26,7 @@ command:
     python -m src.precipitation_summary.make_summary \
         -i <I_FOLDER> -o <O_FOLDER>
 
-The program write statistic files to O_FOLDER.
+The program writes statistic files to O_FOLDER.
 
 
 Possible Improvements
