@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import itertools as it
+import math      as ma
 import operator  as op
 
 import src.precipitation_summary.util as util
@@ -13,6 +14,11 @@ def total_amount(data_it):
 def max_period(period, data_it):
     events = util.sliding_window(period, data_it)
     return max(events, key=total_amount, default=tuple())
+
+
+def total_kinetic_energy(data_it):
+    energy = lambda x: 0.29*(1 - 0.72*ma.exp(-0.05*x))
+    return sum(map(energy, map(op.itemgetter(1), data_it)))
 
 
 def iter_gt_periods(amount, period, data_it):

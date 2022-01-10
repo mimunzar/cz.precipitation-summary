@@ -69,12 +69,13 @@ def write_sheet_data(ws, fn_event_to_rows, event_it):
 
 def write_selected_events(ws, station, event_it):
     fields = cl.OrderedDict({
-        'id'    : lambda i, _, __: i,
-        'rok'   : lambda _, d, __: d.year,
-        'měsíc' : lambda _, d, __: d.month,
-        'den'   : lambda _, d, __: d.day,
-        'termín': lambda _, d, __: f'{d.hour:02}:{d.minute:02}',
-        'SRA10M': lambda _, __, r: r[1],
+        'id'                 : lambda i, _, __: i,
+        'datum [YYYY-MM-DD]' : lambda _, d, __: f'{d.year:04}-{d.month:02}-{d.day:02}',
+        'rok'                : lambda _, d, __: d.year,
+        'měsíc'              : lambda _, d, __: d.month,
+        'den'                : lambda _, d, __: d.day,
+        'termín [HH:MM]'     : lambda _, d, __: f'{d.hour:02}:{d.minute:02}',
+        'SRA10M [mm/10min.]' : lambda _, __, r: r[1],
     })
     write_sheet_header(ws, station, fields.keys())
     formatter     = make_formatter(fields, lambda v: v[0])
@@ -82,24 +83,21 @@ def write_selected_events(ws, station, event_it):
     write_sheet_data(ws, event_to_rows, event_it)
 
 
-def format_event_duration(n):
-    delta = n*dt.timedelta(minutes=10)
-    time  = (dt.datetime.min + delta).time()
-    return f'{delta.days:02}:{time.hour:02}:{time.minute:02}'
-
-
 def write_events_sumary(ws, station, event_it):
     fields = cl.OrderedDict({
-        'id'                : lambda i, _, __: i,
-        'rok'               : lambda _, d, __: d.year,
-        'měsíc'             : lambda _, d, __: d.month,
-        'den'               : lambda _, d, __: d.day,
-        'trvání [DD:HH:MM]' : lambda _, __, e: format_event_duration(len(e)),
-        'celkový úhrn [mm]' : lambda _, __, e: round(rain.total_amount(e), 2),
-        '20 min. max. [mm]' : lambda _, __, e: \
+        'id'                 : lambda i, _, __: i,
+        'datum [YYYY-MM-DD]' : lambda _, d, __: f'{d.year:04}-{d.month:02}-{d.day:02}',
+        'rok'                : lambda _, d, __: d.year,
+        'měsíc'              : lambda _, d, __: d.month,
+        'den'                : lambda _, d, __: d.day,
+        'doba trvání [hod]'  : lambda _, __, e: \
+                round((len(e)*dt.timedelta(minutes=10))/dt.timedelta(hours=1), 2),
+        'celkový úhrn [mm]'  : lambda _, __, e: round(rain.total_amount(e), 2),
+        '20 min. max. [mm]'  : lambda _, __, e: \
                 round(rain.total_amount(rain.max_period(util.minutes(20), e)), 2),
-        '30 min. max. [mm]' : lambda _, __, e: \
+        '30 min. max. [mm]'  : lambda _, __, e: \
                 round(rain.total_amount(rain.max_period(util.minutes(30), e)), 2),
+        'kin. energie [J]'   : lambda _, __, e: round(rain.total_kinetic_energy(e), 2),
     })
     write_sheet_header(ws, station, fields.keys())
     formatter     = make_formatter(fields, lambda e: e[0][0])
