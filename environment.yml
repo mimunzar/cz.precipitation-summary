@@ -1,4 +1,4 @@
-name: cz.precipitation-summary
+name: cz.chmu.precipitation-summary
 channels:
   - defaults
 dependencies:
