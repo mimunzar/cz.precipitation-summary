@@ -3,10 +3,11 @@
 import src.precipitation_summary.rain as rain
 
 
-def test_total_amount():
-    assert rain.total_amount(tuple()) == 0
-    assert rain.total_amount(((0, 1),)) == 1
-    assert rain.total_amount(((0, 1), (1, 2))) == 3
+def test_apply_sum():
+    assert rain.apply_sum(lambda x: x, tuple()) == 0
+    assert rain.apply_sum(lambda x: x, ((0, 1),)) == 1
+    assert rain.apply_sum(lambda x: x, ((0, 1), (1, 2))) == 3
+    assert rain.apply_sum(lambda x: x + 1, ((0, 1), (1, 2))) == 5
 
 
 def test_max_period():

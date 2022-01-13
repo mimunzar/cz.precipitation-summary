@@ -76,6 +76,7 @@ def write_selected_events(ws, station, event_it):
         'den'                : lambda _, d, __: d.day,
         'termín [HH:MM]'     : lambda _, d, __: f'{d.hour:02}:{d.minute:02}',
         'SRA10M [mm/10min.]' : lambda _, __, r: r[1],
+        'kin. energie [J]'   : lambda _, __, r: round(rain.kinetic_energy(r[1]), 4),
     })
     write_sheet_header(ws, station, fields.keys())
     formatter     = make_formatter(fields, lambda v: v[0])
@@ -92,12 +93,14 @@ def write_events_sumary(ws, station, event_it):
         'den'                : lambda _, d, __: d.day,
         'doba trvání [hod]'  : lambda _, __, e: \
                 round((len(e)*dt.timedelta(minutes=10))/dt.timedelta(hours=1), 2),
-        'celkový úhrn [mm]'  : lambda _, __, e: round(rain.total_amount(e), 2),
+        'celkový úhrn [mm]'  : lambda _, __, e: \
+                round(rain.total_amount(e), 2),
         '20 min. max. [mm]'  : lambda _, __, e: \
                 round(rain.total_amount(rain.max_period(util.minutes(20), e)), 2),
         '30 min. max. [mm]'  : lambda _, __, e: \
                 round(rain.total_amount(rain.max_period(util.minutes(30), e)), 2),
-        'kin. energie [J]'   : lambda _, __, e: round(rain.total_kinetic_energy(e), 2),
+        'kin. energie [J]'   : lambda _, __, e: \
+                round(rain.total_kinetic_energy(e), 4),
     })
     write_sheet_header(ws, station, fields.keys())
     formatter     = make_formatter(fields, lambda e: e[0][0])
