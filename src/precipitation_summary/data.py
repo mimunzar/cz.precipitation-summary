@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
+import collections as cl
+import datetime    as dt
+import itertools   as it
+
 import openpyxl as xl
 
 import src.precipitation_summary.rain as rain
 import src.precipitation_summary.util as util
-
-import collections as cl
-import datetime    as dt
-import itertools   as it
 
 
 def iter_rain_rows(rows_it):
