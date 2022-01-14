@@ -10,25 +10,30 @@ import src.precipitation_summary.rain as rain
 import src.precipitation_summary.util as util
 
 
-def iter_rain_rows(rows_it):
-    rain_cols = lambda r: it.islice(r, 4, None)
-    return map(rain_cols, it.islice(rows_it, 4, None))
+def iter_rain_rows(rows_it, offset):
+    row_offset, col_offset = offset
+    rain_cols = lambda r: it.islice(r, col_offset, None)
+    return map(rain_cols, it.islice(rows_it, row_offset, None))
 
 
-def iter_rain_rows_data(rain_row_it):
-    col_vals = cl.defaultdict(list)
+def parse_rain_data(rain_row_it):
+    result = cl.defaultdict(list)
     for r in rain_row_it:
         for c in r:
-            col_vals[c.column_letter].append(c.value or 0)
-    joined_cols = (col_vals[k] for k in sorted(col_vals.keys()))
-    return enumerate(it.chain.from_iterable(joined_cols))
+            result[c.column_letter].append(c.value or 0)
+    return result
+
+
+def iter_rain_data(parsed):
+    cols = (parsed[k] for k in sorted(parsed.keys()))
+    return enumerate(it.chain.from_iterable(cols))
 
 
 def from_sheet(fpath):
-    wb = xl.load_workbook(filename=fpath)
-    ws = wb.worksheets[0]
-    iter_data  = iter_rain_rows_data(iter_rain_rows(ws.iter_rows()))
-    return (ws['A1'].value, iter_data)
+    wb     = xl.load_workbook(filename=fpath)
+    ws     = wb.worksheets[0]
+    parsed = parse_rain_data(iter_rain_rows(ws.iter_rows(), (4, 4)))
+    return (ws['A1'].value, iter_rain_data(parsed))
 
 
 def make_formatter(fields, fn_time):
