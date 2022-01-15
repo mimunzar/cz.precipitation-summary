@@ -58,3 +58,15 @@ def iter_rains(amount, period, data_it):
     consecutives = iter_consecutive_events(rain_events)
     return (tuple(trim_event(merge_consecutive_events(c))) for c in consecutives)
 
+
+def is_heavy_rain(data_it):
+    data_it           = tuple(data_it)
+    period_of_gt_rain = 0 < len(list(iter_gt_periods(8.3, util.minutes(20), data_it)))
+    exceeded_amount   = 12.5 < total_amount(data_it)
+    return exceeded_amount or period_of_gt_rain
+
+
+def iter_heavy_rains(data_it):
+    rains_it = iter_rains(1.27, util.hours(6), data_it)
+    return filter(is_heavy_rain, rains_it)
+

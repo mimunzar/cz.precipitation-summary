@@ -30,3 +30,17 @@ def test_make_print_progress():
     assert util.print_progress(10, 5, 1) == '[##        ]  20%'
     assert util.print_progress(10, 5, 5) == '[##########] 100%'
 
+
+def test_drop():
+    assert list(util.drop(0, range(0))) == []
+    assert list(util.drop(1, range(0))) == []
+    assert list(util.drop(0, range(3))) == [0, 1, 2]
+    assert list(util.drop(2, range(3))) == [2]
+
+
+def test_value_chain():
+    assert list(util.value_chain([])) == []
+    assert list(util.value_chain([1, 2, 3])) == [1, 2, 3]
+    assert list(util.value_chain([1, [2, 3]])) == [1, 2, 3]
+    assert list(util.value_chain([[1, [2, 3]]])) == [1, [2, 3]]
+

@@ -3,6 +3,7 @@
 import collections as cl
 import datetime    as dt
 import itertools   as it
+import functools   as ft
 
 import openpyxl as xl
 
@@ -10,30 +11,27 @@ import src.precipitation_summary.rain as rain
 import src.precipitation_summary.util as util
 
 
-def iter_rain_rows(rows_it, offset):
-    row_offset, col_offset = offset
-    rain_cols = lambda r: it.islice(r, col_offset, None)
-    return map(rain_cols, it.islice(rows_it, row_offset, None))
-
-
-def parse_rain_data(rain_row_it):
-    result = cl.defaultdict(list)
+def parse_data(rain_row_it):
+    result    = cl.defaultdict(list)
+    cell_val  = lambda c: c.value or 0
+    is_outage = lambda c: c.value == None
     for r in rain_row_it:
         for c in r:
-            result[c.column_letter].append(c.value or 0)
+            val = (cell_val(c), is_outage(c))
+            result[c.column_letter].append(val)
     return result
 
 
-def iter_rain_data(parsed):
-    cols = (parsed[k] for k in sorted(parsed.keys()))
-    return enumerate(it.chain.from_iterable(cols))
+def iter_parsed(parsed):
+    vals = it.chain.from_iterable(parsed[k] for k in sorted(parsed.keys()))
+    return map(tuple, map(util.value_chain, enumerate(vals)))
 
 
 def from_sheet(fpath):
-    wb     = xl.load_workbook(filename=fpath)
-    ws     = wb.worksheets[0]
-    parsed = parse_rain_data(iter_rain_rows(ws.iter_rows(), (4, 4)))
-    return (ws['A1'].value, iter_rain_data(parsed))
+    workbook  = xl.load_workbook(filename=fpath)
+    worksheet = workbook.worksheets[0]
+    data_it   = map(ft.partial(util.drop, 4), util.drop(4, worksheet.iter_rows()))
+    return (worksheet['A1'].value, iter_parsed(parse_data(data_it)))
 
 
 def make_formatter(fields, fn_time):
@@ -45,34 +43,34 @@ def make_formatter(fields, fn_time):
     return formatter
 
 
-def make_cell(ws, val, style={}):
-    c       = xl.cell.Cell(ws)
-    c.value = val
+def make_cell(worksheet, val, style={}):
+    cell       = xl.cell.Cell(worksheet)
+    cell.value = val
     for k, v in style.items():
-        setattr(c, k, v)
-    return c
+        setattr(cell, k, v)
+    return cell
 
 
-def write_sheet_header(ws, station, labels):
+def write_sheet_header(worksheet, station, labels):
     font_setting = xl.styles.Font(name='Calibri', bold=True)
-    val_in_bold  = lambda x: make_cell(ws, x, style={'font': font_setting})
+    val_in_bold  = lambda x: make_cell(worksheet, x, style={'font': font_setting})
     row_in_bold  = lambda i: list(map(val_in_bold, i))
-    ws.append(row_in_bold([station]))
-    ws.append(row_in_bold(labels))
+    worksheet.append(row_in_bold([station]))
+    worksheet.append(row_in_bold(labels))
 
 
-def write_sheet_data(ws, fn_event_to_rows, event_it):
+def write_sheet_data(worksheet, fn_event_to_rows, event_it):
     left          = xl.styles.Alignment(horizontal='left')
     fill          = lambda c: xl.styles.PatternFill('solid', fgColor=c)
-    val_with_fill = lambda f, x: make_cell(ws, x,style={'fill': f, 'alignment': left})
+    val_with_fill = lambda f, x: make_cell(worksheet, x,style={'fill': f, 'alignment': left})
     row_with_fill = lambda f, i: [val_with_fill(f, x) for x in i]
     fill_event_it = zip(it.cycle([fill('d5f5c6'), fill('f2c9a3')]), event_it)
     for i, (fill, event) in enumerate(fill_event_it, start=1):
         for row in fn_event_to_rows(i, event):
-            ws.append(row_with_fill(fill, row))
+            worksheet.append(row_with_fill(fill, row))
 
 
-def write_selected_events(ws, station, event_it):
+def heavy_rain_list(worksheet, station, event_it):
     fields = cl.OrderedDict({
         'id'                 : lambda i, _, __: i,
         'datum [YYYY-MM-DD]' : lambda _, d, __: f'{d.year:04}-{d.month:02}-{d.day:02}',
@@ -83,13 +81,13 @@ def write_selected_events(ws, station, event_it):
         'SRA10M [mm/10min.]' : lambda _, __, r: r[1],
         'kin. energie [J]'   : lambda _, __, r: round(rain.kinetic_energy(r[1]), 4),
     })
-    write_sheet_header(ws, station, fields.keys())
+    write_sheet_header(worksheet, station, fields.keys())
     formatter     = make_formatter(fields, lambda v: v[0])
     event_to_rows = lambda i, e: (formatter(i, v) for v in e)
-    write_sheet_data(ws, event_to_rows, event_it)
+    write_sheet_data(worksheet, event_to_rows, event_it)
 
 
-def write_events_sumary(ws, station, event_it):
+def heavy_rain_stat_list(worksheet, station, event_it):
     fields = cl.OrderedDict({
         'id'                 : lambda i, _, __: i,
         'datum [YYYY-MM-DD]' : lambda _, d, __: f'{d.year:04}-{d.month:02}-{d.day:02}',
@@ -107,21 +105,21 @@ def write_events_sumary(ws, station, event_it):
         'kin. energie [J]'   : lambda _, __, e: \
                 round(rain.total_kinetic_energy(e), 4),
     })
-    write_sheet_header(ws, station, fields.keys())
+    write_sheet_header(worksheet, station, fields.keys())
     formatter     = make_formatter(fields, lambda e: e[0][0])
     event_to_rows = lambda i, e: [formatter(i, e)]
-    write_sheet_data(ws, event_to_rows, event_it)
+    write_sheet_data(worksheet, event_to_rows, event_it)
 
 
-def write_statistic_sheet(fpath, station, event_it):
-    wb                   = xl.Workbook()
-    it_1, it_2           = it.tee(event_it)
-    selected_sheet       = wb.active
-    selected_sheet.title = 'selected_events'
-    write_selected_events(selected_sheet, station, it_1)
+def to_sheet(fpath, station, event_it):
+    event_it             = tuple(event_it)
+    workbook             = xl.Workbook()
+    selected_sheet       = workbook.active
+    selected_sheet.title = 'heavy_rains'
+    heavy_rain_list(selected_sheet, station, event_it)
 
-    summary_sheet       = wb.create_sheet()
-    summary_sheet.title = 'events_summary'
-    write_events_sumary(summary_sheet, station, it_2)
-    wb.save(fpath)
+    summary_sheet       = workbook.create_sheet()
+    summary_sheet.title = 'heavy_rains_stats'
+    heavy_rain_stat_list(summary_sheet, station, event_it)
+    workbook.save(fpath)
 

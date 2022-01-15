@@ -39,21 +39,9 @@ def iter_pending_files(i_dir, o_dir):
     return ((input_path(f), output_path(f), total_files) for f in input_files)
 
 
-def is_heavy_rain(data_it):
-    data_it           = tuple(data_it)
-    period_of_gt_rain = 0 < len(list(rain.iter_gt_periods(8.3, util.minutes(20), data_it)))
-    exceeded_amount   = 12.5 < rain.total_amount(data_it)
-    return exceeded_amount or period_of_gt_rain
-
-
-def iter_heavy_rains(data_it):
-    rains_it = rain.iter_rains(1.27, util.hours(6), data_it)
-    return filter(is_heavy_rain, rains_it)
-
-
 def write_statistic_file(i_path, o_path):
     station, data_it = data.from_sheet(i_path)
-    data.write_statistic_sheet(o_path, station, iter_heavy_rains(data_it))
+    data.to_sheet(o_path, station, rain.iter_heavy_rains(data_it))
 
 
 def process_file(done, x):

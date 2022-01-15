@@ -28,3 +28,15 @@ def print_progress(bar_width, total, curr):
     prog  = ('#'*round(ratio*bar_width)).ljust(bar_width)
     return f'[{prog}] {ratio:4.0%}'
 
+
+def drop(n, iterable):
+    return it.islice(iterable, n, None)
+
+
+def value_chain(iterable):
+    for i in iterable:
+        try:
+            yield from i
+        except TypeError:
+            yield i
+
