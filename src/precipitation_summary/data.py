@@ -23,8 +23,9 @@ def parse_data(rain_row_it):
 
 
 def iter_parsed(parsed):
-    vals = it.chain.from_iterable(parsed[k] for k in sorted(parsed.keys()))
-    return map(tuple, map(util.value_chain, enumerate(vals)))
+    vals    = it.chain.from_iterable(parsed[k] for k in sorted(parsed.keys()))
+    flatten = lambda i: tuple(util.value_chain(i))
+    return map(flatten, enumerate(vals))
 
 
 def from_sheet(fpath):
@@ -70,7 +71,7 @@ def write_sheet_data(worksheet, fn_event_to_rows, event_it):
             worksheet.append(row_with_fill(fill, row))
 
 
-def heavy_rain_list(worksheet, station, event_it):
+def hr_list(worksheet, station, event_it):
     fields = cl.OrderedDict({
         'id'                 : lambda i, _, __: i,
         'datum [YYYY-MM-DD]' : lambda _, d, __: f'{d.year:04}-{d.month:02}-{d.day:02}',
@@ -99,11 +100,13 @@ def heavy_rain_stat_list(worksheet, station, event_it):
         'celkový úhrn [mm]'  : lambda _, __, e: \
                 round(rain.total_amount(e), 2),
         '20 min. max. [mm]'  : lambda _, __, e: \
-                round(rain.total_amount(rain.max_period(util.minutes(20), e)), 2),
+                round(rain.total_max_period(util.minutes(20), e), 2),
         '30 min. max. [mm]'  : lambda _, __, e: \
-                round(rain.total_amount(rain.max_period(util.minutes(30), e)), 2),
-        'kin. energie [J]'   : lambda _, __, e: \
+                round(rain.total_max_period(util.minutes(30), e), 2),
+        'kin. energie [MJ]'  : lambda _, __, e: \
                 round(rain.total_kinetic_energy(e), 4),
+        'erozivita [R]'      : lambda _, __, e: \
+                round(rain.total_erosivity(util.minutes(30), e), 4),
     })
     write_sheet_header(worksheet, station, fields.keys())
     formatter     = make_formatter(fields, lambda e: e[0][0])
@@ -112,14 +115,14 @@ def heavy_rain_stat_list(worksheet, station, event_it):
 
 
 def to_sheet(fpath, station, event_it):
-    event_it             = tuple(event_it)
-    workbook             = xl.Workbook()
-    selected_sheet       = workbook.active
-    selected_sheet.title = 'heavy_rains'
-    heavy_rain_list(selected_sheet, station, event_it)
+    event_it       = tuple(event_it)
+    workbook       = xl.Workbook()
+    hr_sheet       = workbook.active
+    hr_sheet.title = 'heavy_rains'
+    hr_list(hr_sheet, station, event_it)
 
-    summary_sheet       = workbook.create_sheet()
-    summary_sheet.title = 'heavy_rains_stats'
-    heavy_rain_stat_list(summary_sheet, station, event_it)
+    hr_stat_sheet       = workbook.create_sheet()
+    hr_stat_sheet.title = 'heavy_rains_stats'
+    heavy_rain_stat_list(hr_stat_sheet, station, event_it)
     workbook.save(fpath)
 

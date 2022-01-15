@@ -19,6 +19,13 @@ def test_max_period():
     assert rain.max_period(2, ((0, 1), (1, 2), (2, 3))) == ((1, 2), (2, 3),)
 
 
+def test_total_max_period():
+    assert rain.total_max_period(1, tuple()) == 0
+    assert rain.total_max_period(1, ((0, 1),)) == 1
+    assert rain.total_max_period(1, ((0, 1), (1, 2),)) == 2
+    assert rain.total_max_period(2, ((0, 1), (1, 2), (2, 3))) == 5
+
+
 def test_iter_gt_periods():
     assert list(rain.iter_gt_periods(.9, 0, [])) == []
     data = [(0, 1)]

@@ -28,6 +28,14 @@ def max_period(period, data_it):
     return max(events, key=total_amount, default=tuple())
 
 
+def total_max_period(period, data_it):
+    return total_amount(max_period(period, data_it))
+
+
+def total_erosivity(period, data_it):
+    return 2*total_max_period(period, data_it)*total_kinetic_energy(data_it)
+
+
 def iter_gt_periods(amount, period, data_it):
     events           = util.sliding_window(period, data_it)
     has_total_amount = lambda e: amount < total_amount(e)
