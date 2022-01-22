@@ -40,8 +40,10 @@ def iter_pending_files(i_dir, o_dir):
 
 
 def write_statistic_file(i_path, o_path):
-    station, data_it = data.from_sheet(i_path)
-    data.to_sheet(o_path, station, rain.iter_heavy_rains(data_it))
+    station, data_it = data.from_workbook(i_path)
+    rains_it       = tuple(rain.iter_rains(1.27, util.hours(6), data_it))
+    heavy_rains_it = filter(rain.is_heavy_rain, rains_it)
+    data.to_workbook(o_path, station, rains_it, heavy_rains_it)
 
 
 def process_file(done, x):

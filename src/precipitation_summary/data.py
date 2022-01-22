@@ -28,7 +28,7 @@ def iter_parsed(parsed):
     return map(flatten, enumerate(vals))
 
 
-def from_sheet(fpath):
+def from_workbook(fpath):
     workbook  = xl.load_workbook(filename=fpath)
     worksheet = workbook.worksheets[0]
     data_it   = map(ft.partial(util.drop, 4), util.drop(4, worksheet.iter_rows()))
@@ -71,7 +71,7 @@ def write_sheet_data(worksheet, fn_event_to_rows, event_it):
             worksheet.append(row_with_fill(fill, row))
 
 
-def hr_list(worksheet, station, event_it):
+def write_timeline_sheet(worksheet, station, event_it):
     fields = cl.OrderedDict({
         'id'                 : lambda i, _, __: i,
         'datum [YYYY-MM-DD]' : lambda _, d, __: f'{d.year:04}-{d.month:02}-{d.day:02}',
@@ -80,7 +80,6 @@ def hr_list(worksheet, station, event_it):
         'den'                : lambda _, d, __: d.day,
         'termín [HH:MM]'     : lambda _, d, __: f'{d.hour:02}:{d.minute:02}',
         'SRA10M [mm/10min.]' : lambda _, __, r: r[1],
-        'kin. energie [J]'   : lambda _, __, r: round(rain.kinetic_energy(r[1]), 4),
     })
     write_sheet_header(worksheet, station, fields.keys())
     formatter     = make_formatter(fields, lambda v: v[0])
@@ -88,7 +87,7 @@ def hr_list(worksheet, station, event_it):
     write_sheet_data(worksheet, event_to_rows, event_it)
 
 
-def heavy_rain_stat_list(worksheet, station, event_it):
+def write_stat_sheet(worksheet, station, event_it):
     fields = cl.OrderedDict({
         'id'                 : lambda i, _, __: i,
         'datum [YYYY-MM-DD]' : lambda _, d, __: f'{d.year:04}-{d.month:02}-{d.day:02}',
@@ -114,15 +113,21 @@ def heavy_rain_stat_list(worksheet, station, event_it):
     write_sheet_data(worksheet, event_to_rows, event_it)
 
 
-def to_sheet(fpath, station, event_it):
-    event_it       = tuple(event_it)
-    workbook       = xl.Workbook()
-    hr_sheet       = workbook.active
-    hr_sheet.title = 'heavy_rains'
-    hr_list(hr_sheet, station, event_it)
+def write_rain_sheets(workbook, name, station, event_it):
+    event_it             = tuple(event_it)
+    timeline_sheet       = workbook.create_sheet()
+    timeline_sheet.title = name
+    write_timeline_sheet(timeline_sheet, station, event_it)
 
-    hr_stat_sheet       = workbook.create_sheet()
-    hr_stat_sheet.title = 'heavy_rains_stats'
-    heavy_rain_stat_list(hr_stat_sheet, station, event_it)
+    stat_sheet       = workbook.create_sheet()
+    stat_sheet.title = f'{name}_stats'
+    write_stat_sheet(stat_sheet, station, event_it)
+
+
+def to_workbook(fpath, station, event_it, heavy_event_it):
+    workbook = xl.Workbook()
+    workbook.remove(workbook.active)
+    write_rain_sheets(workbook, 'rain', station, event_it)
+    write_rain_sheets(workbook, 'heavy_rain', station, heavy_event_it)
     workbook.save(fpath)
 
