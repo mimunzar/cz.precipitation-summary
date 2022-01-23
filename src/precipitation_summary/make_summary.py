@@ -39,27 +39,29 @@ def iter_pending_files(i_dir, o_dir):
     return ((input_path(f), output_path(f), total_files) for f in input_files)
 
 
-def write_statistic_file(i_path, o_path):
-    station, data_it = data.from_workbook(i_path)
-    rains_it       = tuple(rain.iter_rains(1.27, util.hours(6), data_it))
-    heavy_rains_it = filter(rain.is_heavy_rain, rains_it)
-    data.to_workbook(o_path, station, rains_it, heavy_rains_it)
+def process_directory(i_dir, o_dir):
+    to_station_workbook = data.to_station_workbook
+    to_stat_workbook    = data.make_to_stat_workbook(os.path.join(o_dir, 'stat.xlsx'))
+    def process_file(done, pending_files_it):
+        i_path, o_path, total = pending_files_it
+        current_file = os.path.basename(i_path)
+        progress_bar = lambda done: util.print_progress(40, total, done)
+        print(f'{progress_bar(done)} ({current_file})', end='\r')
 
-
-def process_file(done, x):
-    i_path, o_path, total = x
-    current_file = os.path.basename(i_path)
-    progress_bar = lambda done: util.print_progress(40, total, done)
-    print(f'{progress_bar(done)} ({current_file})', end='\r')
-    write_statistic_file(i_path, o_path)
-    done += 1
-    print(f'{progress_bar(done)} ({current_file})', end='\r')
-    return done
+        station, data_it = data.from_workbook(i_path)
+        rains_it         = tuple(rain.iter_rains(1.27, util.hours(6), data_it))
+        heavy_rains_it   = tuple(filter(rain.is_heavy_rain, rains_it))
+        to_station_workbook(o_path, station, rains_it, heavy_rains_it)
+        done += 1
+        to_stat_workbook(done, station, rains_it, heavy_rains_it)
+        print(f'{progress_bar(done)} ({current_file})', end='\r')
+        return done
+    return ft.reduce(process_file, iter_pending_files(i_dir, o_dir), 0)
 
 
 if __name__ == '__main__':
     i_dir, o_dir = parse_args(sys.argv[1:])
     os.makedirs(o_dir, exist_ok=True)
-    ft.reduce(process_file, iter_pending_files(i_dir, o_dir), 0)
+    process_directory(i_dir, o_dir)
     print()
 
