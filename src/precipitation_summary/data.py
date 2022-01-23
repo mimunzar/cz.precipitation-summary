@@ -5,7 +5,8 @@ import datetime    as dt
 import itertools   as it
 import functools   as ft
 
-import openpyxl as xl
+import openpyxl       as xl
+import openpyxl.utils as xl_utils
 
 import src.precipitation_summary.rain as rain
 import src.precipitation_summary.util as util
@@ -52,12 +53,19 @@ def make_cell(worksheet, val, style={}):
     return cell
 
 
-def write_sheet_header(worksheet, station, labels):
+def set_column_width(worksheet, labels_it):
+    cl_it = map(xl_utils.get_column_letter, it.count(1))
+    for c, l in zip(cl_it, labels_it):
+        worksheet.column_dimensions[c].width = max(10, 1.23*len(str(l)))
+
+
+def write_sheet_header(worksheet, station, labels_it):
     font_setting = xl.styles.Font(name='Calibri', bold=True)
     val_in_bold  = lambda x: make_cell(worksheet, x, style={'font': font_setting})
     row_in_bold  = lambda i: list(map(val_in_bold, i))
     worksheet.append(row_in_bold([station]))
-    worksheet.append(row_in_bold(labels))
+    worksheet.append(row_in_bold(labels_it))
+    set_column_width(worksheet, labels_it)
 
 
 def write_sheet_data(worksheet, fn_event_to_rows, event_it):
