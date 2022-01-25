@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
-import itertools as it
-import math      as ma
-import operator  as op
+import itertools   as it
+import collections as cl
+import datetime    as dt
+import math        as ma
+import operator    as op
 
 import src.precipitation_summary.util as util
 
@@ -42,11 +44,10 @@ def iter_gt_periods(amount, period, data_it):
     return filter(has_total_amount, events)
 
 
-def iter_consecutive_events(events_it):
-    by_ordering = lambda ie: ie[0] - ie[1][0][0]
-    #^ Group by an index and a first event's index
-    groups      = it.groupby(enumerate(events_it), key=by_ordering)
-    return (list(map(op.itemgetter(1), g)) for _, g in groups)
+def iter_consecutive_events(fn_order, events_it):
+    ordering = lambda ie: ie[0] - fn_order(ie[1])
+    groups   = it.groupby(enumerate(events_it), key=ordering)
+    return (tuple(map(op.itemgetter(1), g)) for _, g in groups)
 
 
 def merge_consecutive_events(events_it):
@@ -57,13 +58,14 @@ def merge_consecutive_events(events_it):
 
 def trim_event(data_it):
     doesnt_rain = lambda e: not e[1]
-    trim_start  = lambda i: list(it.dropwhile(doesnt_rain, i))
+    trim_start  = lambda i: tuple(it.dropwhile(doesnt_rain, i))
     return reversed(trim_start(reversed(trim_start(data_it))))
 
 
 def iter_rains(amount, period, data_it):
     rain_events  = iter_gt_periods(amount, period, data_it)
-    consecutives = iter_consecutive_events(rain_events)
+    consecutives = iter_consecutive_events(lambda e: e[0][0], rain_events)
+    #^ Group by an index and a first event's index
     return (tuple(trim_event(merge_consecutive_events(c))) for c in consecutives)
 
 
@@ -72,3 +74,33 @@ def is_heavy_rain(data_it):
     intense_period  = 0 < len(tuple(iter_gt_periods(8.3, util.minutes(20), data_it)))
     exceeded_amount = 12.5 < total_amount(data_it)
     return exceeded_amount or intense_period
+
+
+def make_data_utc_date():
+    delta_10m = dt.timedelta(minutes=10)
+    epoch_10m = (dt.datetime(2010, 1, 1) - dt.datetime(1970, 1, 1))//delta_10m
+    cest_date = lambda secs: dt.datetime.fromtimestamp(secs, dt.timezone.utc)
+    return lambda d: cest_date((epoch_10m + d[0])*delta_10m.seconds)
+
+
+TO_UTC_DATE    = make_data_utc_date()
+GET_DATA_YEAR  = lambda d: TO_UTC_DATE(d).year
+GET_DATA_MONTH = lambda d: TO_UTC_DATE(d).month
+
+
+def iter_yearly(events_it, fn_year=GET_DATA_YEAR):
+    grouped     = it.groupby(it.chain.from_iterable(events_it), key=fn_year)
+    year        = cl.defaultdict(tuple, {k: tuple(l) for k, l in grouped})
+    iter_events = lambda it: iter_consecutive_events(lambda e: e[0], it)
+    return ((y, tuple(iter_events(year[y]))) for y in range(2010, 2021))
+
+
+def iter_monthly(yearly_it, fn_month=GET_DATA_MONTH):
+    def montly(yearly):
+        y, event_it = yearly
+        grouped     = it.groupby(it.chain.from_iterable(event_it), key=fn_month)
+        month       = cl.defaultdict(tuple, {k: tuple(l) for k, l in grouped})
+        iter_events = lambda it: iter_consecutive_events(lambda e: e[0], it)
+        return ((y, m, tuple(iter_events(month[m]))) for m in range(1, 13))
+    return it.chain.from_iterable(map(montly, yearly_it))
+

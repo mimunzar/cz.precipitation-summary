@@ -12,7 +12,7 @@ Installation
 To install the tool navigate to the project's folder  and  issue  the  following
 command:
 
-    conda env create environment.yml
+    conda env create -f environment.yml
 
 Note: The program was developed with Python 3.9
 
@@ -24,7 +24,8 @@ To make statistics from input files located in I_FOLDER issue the following
 command:
 
     python -m src.precipitation_summary.make_summary \
-        -i <I_FOLDER> -o <O_FOLDER>
+        -i <I_FOLDER> \
+        -o <O_FOLDER>
 
 The program writes statistic files to O_FOLDER.
 

@@ -48,10 +48,10 @@ def make_station_formatter(fields, fn_start_time):
     return formatter
 
 
-def make_cell(worksheet, val, style={}):
+def make_cell(worksheet, cell_style, val):
     cell       = xl.cell.Cell(worksheet)
     cell.value = val
-    for k, v in style.items():
+    for k, v in cell_style.items():
         setattr(cell, k, v)
     return cell
 
@@ -63,10 +63,8 @@ def set_column_width(worksheet, labels_it):
 
 
 def write_sheet_labels(worksheet, labels_it):
-    font_setting = xl.styles.Font(name='Calibri', bold=True)
-    val_in_bold  = lambda x: make_cell(worksheet, x, style={'font': font_setting})
-    row_in_bold  = lambda i: list(map(val_in_bold, i))
-    worksheet.append(row_in_bold(labels_it))
+    style = {'font': xl.styles.Font(name='Calibri', bold=True)}
+    worksheet.append(tuple(map(ft.partial(make_cell, worksheet, style), labels_it)))
     set_column_width(worksheet, labels_it)
 
 
@@ -76,7 +74,7 @@ def make_fill(color):
 
 def write_sheet_data(worksheet, fn_iter_row_vals, event_it):
     style   = lambda fill: {'fill': fill, 'alignment': LEFT_ALIGN}
-    cell    = lambda fill, x: make_cell(worksheet, x, style(fill))
+    cell    = lambda fill, x: make_cell(worksheet, style(fill), x)
     fill_it = it.cycle((make_fill('d5f5c6'), make_fill('f2c9a3')))
     for i, (fill, event) in enumerate(zip(fill_it, event_it), start=1):
         for val_it in fn_iter_row_vals(i, event):
@@ -150,7 +148,7 @@ def make_append_stat_sheet(worksheet):
     fields = cl.OrderedDict({
         'id'                     : lambda i, _, __: i,
         'stanice'                : lambda _, s, __: s,
-        'počet srážek'           : lambda _, __, e: len(e),
+        'počet srážek za 10let'  : lambda _, __, e: len(e),
         'suma SRA10M [mm/10let]' : lambda _, __, e: round(sum(map(rain.total_amount, e)), 2),
     })
     write_sheet_labels(worksheet, fields.keys())
@@ -158,16 +156,45 @@ def make_append_stat_sheet(worksheet):
     def append_stat_sheet(idx, station, event_it):
         style = {'alignment': LEFT_ALIGN, 'fill': next(fill_it)}
         vals  = map(lambda fn: fn(idx, station, event_it), fields.values())
-        cell  = lambda v: make_cell(worksheet, v, style)
-        worksheet.append(tuple(map(cell, vals)))
+        worksheet.append(tuple(map(ft.partial(make_cell, worksheet, style), vals)))
     return append_stat_sheet
+
+
+def make_append_montly_stat_sheet(worksheet):
+    fields = cl.OrderedDict({
+        'id'                     : lambda i, _, __: i,
+        'stanice'                : lambda _, s, __: s,
+        'rok'                    : lambda _, __, m: m[0],
+        'měsíc'                  : lambda _, __, m: m[1],
+        'počet srážek za měsíc'  : lambda _, __, m: len(m[2]),
+        'suma SRA10M [mm/měsíc]' : lambda _, __, m: \
+                round(sum(map(rain.total_amount, m[2])), 2)
+    })
+    write_sheet_labels(worksheet, fields.keys())
+    fill_it = it.cycle((make_fill('d5f5c6'), make_fill('f2c9a3')))
+    def append_montly_stat_sheet(idx, station, monthly_it):
+        style = lambda: {'alignment': LEFT_ALIGN, 'fill': next(fill_it)}
+        vals  = lambda it: map(lambda fn: fn(idx, station, it), fields.values())
+        cells = lambda it: map(ft.partial(make_cell, worksheet, style()), it)
+        for row in map(cells, map(vals, monthly_it)):
+            worksheet.append(tuple(row))
+    return append_montly_stat_sheet
 
 
 def make_append_stat_workbook(workbook, name):
     stat_sheet        = workbook.create_sheet()
     stat_sheet.title  = name
     append_stat_sheet = make_append_stat_sheet(stat_sheet)
-    return append_stat_sheet
+
+    monthly_stat_sheet       = workbook.create_sheet()
+    monthly_stat_sheet.title = f'{name}_monthly'
+    append_montly_stat_sheet = make_append_montly_stat_sheet(monthly_stat_sheet)
+    iter_monthly             = lambda event_it: rain.iter_monthly(rain.iter_yearly(event_it))
+    def append_stat_workbook(idx, station, event_it):
+        event_it = tuple(event_it)
+        append_stat_sheet       (idx, station, event_it)
+        append_montly_stat_sheet(idx, station, iter_monthly(event_it))
+    return append_stat_workbook
 
 
 def make_to_stat_workbook(fpath):
