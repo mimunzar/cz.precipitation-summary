@@ -1,9 +1,9 @@
 Precipitation Summary Tool
 ==========================
 
-The tools allows to make statistics of selected rains from recorded rain data.
-The input of the tool is data recorded in Excell sheets. The output are Excell
-sheets with written statistics of selected rains.
+The tools allows to make statistics of selected rains from recorded  rain  data.
+The input of the tool is data recorded in Excell sheets.  The outputs are Excell
+sheets with rain statistics.
 
 
 Installation
@@ -27,13 +27,13 @@ command:
         -i <I_FOLDER> \
         -o <O_FOLDER>
 
-The program writes statistic files to O_FOLDER.
+The program writes the statistic files to O_FOLDER.
 
 
 Possible Improvements
 ---------------------
 
     - Support additional statistics
-    - Make data location in input sheets configurable
-    - Files could be processed independently in parallel
+    - Support configuration of data locations in input sheets
+    - Support parallel processing
 

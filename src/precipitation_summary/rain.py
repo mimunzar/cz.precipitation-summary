@@ -103,11 +103,11 @@ def iter_yearly(events_it, fn_year=GET_DATA_YEAR):
 
 
 def iter_monthly(yearly_it, fn_month=GET_DATA_MONTH):
+    iter_events = lambda it: iter_consecutive_events(lambda e: e[0], it)
     def montly(yearly):
         y, event_it = yearly
         grouped     = it.groupby(it.chain.from_iterable(event_it), key=fn_month)
         month       = cl.defaultdict(tuple, {k: tuple(l) for k, l in grouped})
-        iter_events = lambda it: iter_consecutive_events(lambda e: e[0], it)
         return ((y, m, tuple(iter_events(month[m]))) for m in range(1, 13))
     return it.chain.from_iterable(map(montly, yearly_it))
 
