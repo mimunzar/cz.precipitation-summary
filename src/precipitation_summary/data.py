@@ -136,21 +136,28 @@ def write_station_workbook(workbook, name, station, event_it):
     write_param_sheet(param_sheet, station, event_it)
 
 
-def to_station_workbook(fpath, station, event_it, heavy_event_it):
+LGT_RAIN_DESC = "celkový úhrn > 1.27 mm"
+MID_RAIN_DESC = "20 min. max. > 8.3 mm nebo celkový úhrn > 12.5 mm."
+HVY_RAIN_DESC = "20 min. max. > 8.3 mm a celkový úhrn > 12.5 mm."
+
+
+def to_station_workbook(fpath, station, events_it, mid_events_it, heavy_events_it):
     workbook = xl.Workbook()
     workbook.remove(workbook.active)
-    write_station_workbook(workbook, 'rain', station, event_it)
-    write_station_workbook(workbook, 'heavy_rain', station, heavy_event_it)
+    write_station_workbook(workbook, 'light_rain',  f'{station} ({LGT_RAIN_DESC})', events_it)
+    write_station_workbook(workbook, 'middle_rain', f'{station} ({MID_RAIN_DESC})', mid_events_it)
+    write_station_workbook(workbook, 'heavy_rain',  f'{station} ({HVY_RAIN_DESC})', heavy_events_it)
     workbook.save(fpath)
 
 
-def make_append_stat_sheet(worksheet):
+def make_append_stat_sheet(worksheet, heading):
     fields = cl.OrderedDict({
         'id'                     : lambda i, _, __: i,
         'stanice'                : lambda _, s, __: s,
         'počet srážek za 10let'  : lambda _, __, e: len(e),
         'suma SRA10M [mm/10let]' : lambda _, __, e: round(sum(map(rain.total_amount, e)), 2),
     })
+    write_sheet_labels(worksheet, [heading])
     write_sheet_labels(worksheet, fields.keys())
     fill_it = it.cycle((make_fill('d5f5c6'), make_fill('f2c9a3')))
     def append_stat_sheet(idx, station, event_it):
@@ -160,7 +167,7 @@ def make_append_stat_sheet(worksheet):
     return append_stat_sheet
 
 
-def make_append_montly_stat_sheet(worksheet):
+def make_append_montly_stat_sheet(worksheet, heading):
     fields = cl.OrderedDict({
         'id'                     : lambda i, _, __: i,
         'stanice'                : lambda _, s, __: s,
@@ -170,6 +177,7 @@ def make_append_montly_stat_sheet(worksheet):
         'suma SRA10M [mm/měsíc]' : lambda _, __, m: \
                 round(sum(map(rain.total_amount, m[2])), 2)
     })
+    write_sheet_labels(worksheet, [heading])
     write_sheet_labels(worksheet, fields.keys())
     fill_it = it.cycle((make_fill('d5f5c6'), make_fill('f2c9a3')))
     def append_montly_stat_sheet(idx, station, monthly_it):
@@ -181,14 +189,14 @@ def make_append_montly_stat_sheet(worksheet):
     return append_montly_stat_sheet
 
 
-def make_append_stat_workbook(workbook, name):
+def make_append_stat_workbook(workbook, name, heading):
     stat_sheet        = workbook.create_sheet()
     stat_sheet.title  = name
-    append_stat_sheet = make_append_stat_sheet(stat_sheet)
+    append_stat_sheet = make_append_stat_sheet(stat_sheet, heading)
 
     monthly_stat_sheet       = workbook.create_sheet()
     monthly_stat_sheet.title = f'{name}_monthly'
-    append_montly_stat_sheet = make_append_montly_stat_sheet(monthly_stat_sheet)
+    append_montly_stat_sheet = make_append_montly_stat_sheet(monthly_stat_sheet, heading)
     iter_monthly             = lambda event_it: rain.iter_monthly(rain.iter_yearly(event_it))
     def append_stat_workbook(idx, station, event_it):
         event_it = tuple(event_it)
@@ -200,10 +208,12 @@ def make_append_stat_workbook(workbook, name):
 def make_to_stat_workbook(fpath):
     workbook          = xl.Workbook()
     workbook.remove(workbook.active)
-    append_rain       = make_append_stat_workbook(workbook, 'rain')
-    append_heavy_rain = make_append_stat_workbook(workbook, 'heavy_rain')
-    def to_stat_workbook(idx, station, event_it, heavy_event_it):
-        append_rain      (idx, station, event_it)
+    append_rain       = make_append_stat_workbook(workbook, 'light_rain',  LGT_RAIN_DESC)
+    append_mild_rain  = make_append_stat_workbook(workbook, 'middle_rain', MID_RAIN_DESC)
+    append_heavy_rain = make_append_stat_workbook(workbook, 'heavy_rain',  HVY_RAIN_DESC)
+    def to_stat_workbook(idx, station, light_events_it, mid_events_it, heavy_event_it):
+        append_rain      (idx, station, light_events_it)
+        append_mild_rain (idx, station, mid_events_it)
         append_heavy_rain(idx, station, heavy_event_it)
         workbook.save(fpath)
     return to_stat_workbook

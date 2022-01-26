@@ -91,14 +91,23 @@ def test_iter_rains():
             ((5, 1),)]
 
 
+def test_is_mild_rain():
+    assert rain.is_mid_rain(()) == False
+    assert rain.is_mid_rain(it.islice(it.repeat((0, 3)), 4)) == False
+    assert rain.is_mid_rain(it.islice(it.repeat((0, 3)), 5)) == True
+    #^ The amount is higher than 12.5 mm in total
+    assert rain.is_mid_rain(it.islice(it.repeat((0, 5)), 1)) == False
+    assert rain.is_mid_rain(it.islice(it.repeat((0, 5)), 2)) == True
+    #^ The amount per 20 minutes is than 8.3 mm
+
+
 def test_is_heavy_rain():
     assert rain.is_heavy_rain(()) == False
     assert rain.is_heavy_rain(it.islice(it.repeat((0, 3)), 4)) == False
-    assert rain.is_heavy_rain(it.islice(it.repeat((0, 3)), 5)) == True
-    #^ The amount is higher than 12.5 mm in total
-    assert rain.is_heavy_rain(it.islice(it.repeat((0, 5)), 1)) == False
-    assert rain.is_heavy_rain(it.islice(it.repeat((0, 5)), 2)) == True
-    #^ The amount per 20 minutes is than 8.3 mm
+    assert rain.is_heavy_rain(it.islice(it.repeat((0, 5)), 2)) == False
+    assert rain.is_heavy_rain(it.islice(it.repeat((0, 5)), 3)) == True
+    #^ The amount is higher than 12.5 mm in total and the amount per 20 minutes
+    # is more than 8.3 mm
 
 
 def test_make_data_utc_date():

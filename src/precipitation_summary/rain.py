@@ -69,11 +69,18 @@ def iter_rains(amount, period, data_it):
     return (tuple(trim_event(merge_consecutive_events(c))) for c in consecutives)
 
 
-def is_heavy_rain(data_it):
+def is_mid_rain(data_it):
     data_it         = tuple(data_it)
     intense_period  = 0 < len(tuple(iter_gt_periods(8.3, util.minutes(20), data_it)))
     exceeded_amount = 12.5 < total_amount(data_it)
     return exceeded_amount or intense_period
+
+
+def is_heavy_rain(data_it):
+    data_it         = tuple(data_it)
+    intense_period  = 0 < len(tuple(iter_gt_periods(8.3, util.minutes(20), data_it)))
+    exceeded_amount = 12.5 < total_amount(data_it)
+    return exceeded_amount and intense_period
 
 
 def make_data_utc_date():

@@ -50,10 +50,11 @@ def process_directory(i_dir, o_dir):
 
         station, data_it = data.from_workbook(i_path)
         rains_it         = tuple(rain.iter_rains(1.27, util.hours(6), data_it))
+        mid_rains_it     = tuple(filter(rain.is_mid_rain,   rains_it))
         heavy_rains_it   = tuple(filter(rain.is_heavy_rain, rains_it))
-        to_station_workbook(o_path, station, rains_it, heavy_rains_it)
+        to_station_workbook(o_path, station, rains_it, mid_rains_it, heavy_rains_it)
         done += 1
-        to_stat_workbook(done, station, rains_it, heavy_rains_it)
+        to_stat_workbook(done, station, rains_it, mid_rains_it, heavy_rains_it)
         print(f'{progress_bar(done)} ({current_file})', end='\r')
         return done
     return ft.reduce(process_file, iter_pending_files(i_dir, o_dir), 0)
