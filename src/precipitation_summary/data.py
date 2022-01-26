@@ -27,7 +27,7 @@ def parse_data(rain_row_it):
 
 
 def iter_parsed(parsed):
-    vals    = it.chain.from_iterable(parsed[k] for k in sorted(parsed.keys()))
+    vals    = util.flatten(parsed[k] for k in sorted(parsed.keys()))
     flatten = lambda i: tuple(util.value_chain(i))
     return map(flatten, enumerate(vals))
 

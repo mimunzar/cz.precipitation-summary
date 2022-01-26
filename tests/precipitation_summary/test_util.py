@@ -44,3 +44,10 @@ def test_value_chain():
     assert list(util.value_chain([1, [2, 3]])) == [1, 2, 3]
     assert list(util.value_chain([[1, [2, 3]]])) == [1, [2, 3]]
 
+
+def test_flatten():
+    assert list(util.flatten([])) == []
+    assert list(util.flatten([[1, 2, 3]])) == [1, 2, 3]
+    assert list(util.flatten([[1], [2, 3]])) == [1, 2, 3]
+    assert list(util.flatten([[[1, 2, 3]]])) == [[1, 2, 3]]
+

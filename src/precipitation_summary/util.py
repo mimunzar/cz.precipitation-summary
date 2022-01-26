@@ -40,3 +40,7 @@ def value_chain(iterable):
         except TypeError:
             yield i
 
+
+def flatten(iterable):
+    return it.chain.from_iterable(iterable)
+
