@@ -90,24 +90,22 @@ def make_data_utc_date():
     return lambda d: cest_date((epoch_10m + d[0])*delta_10m.seconds)
 
 
-TO_UTC_DATE    = make_data_utc_date()
-GET_DATA_YEAR  = lambda d: TO_UTC_DATE(d).year
-GET_DATA_MONTH = lambda d: TO_UTC_DATE(d).month
+TO_UTC_DATE = make_data_utc_date()
+EVENT_YEAR  = lambda e: TO_UTC_DATE(e[0]).year
+EVENT_MONTH = lambda e: TO_UTC_DATE(e[0]).month
 
 
-def iter_yearly(events_it, fn_year=GET_DATA_YEAR):
-    grouped     = it.groupby(util.flatten(events_it), key=fn_year)
-    year        = cl.defaultdict(tuple, {k: tuple(l) for k, l in grouped})
-    iter_events = lambda it: iter_consecutive_events(lambda e: e[0], it)
-    return ((y, tuple(iter_events(year[y]))) for y in range(2010, 2021))
+def iter_yearly(events_it, fn_event_year=EVENT_YEAR):
+    grouped  = it.groupby(events_it, key=fn_event_year)
+    year     = cl.defaultdict(tuple, {k: tuple(l) for k, l in grouped})
+    return ((y, year[y]) for y in range(2010, 2021))
 
 
-def iter_monthly(yearly_it, fn_month=GET_DATA_MONTH):
-    iter_events = lambda it: iter_consecutive_events(lambda e: e[0], it)
+def iter_monthly(yearly_it, fn_event_month=EVENT_MONTH):
     def montly(yearly):
         y, event_it = yearly
-        grouped     = it.groupby(util.flatten(event_it), key=fn_month)
+        grouped     = it.groupby(event_it, key=fn_event_month)
         month       = cl.defaultdict(tuple, {k: tuple(l) for k, l in grouped})
-        return ((y, m, tuple(iter_events(month[m]))) for m in range(1, 13))
+        return ((y, m, month[m]) for m in range(1, 13))
     return util.flatten(map(montly, yearly_it))
 

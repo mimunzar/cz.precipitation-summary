@@ -119,13 +119,14 @@ def test_make_data_utc_date():
 
 def test_iter_yearly():
     data   = []
-    result = list(rain.iter_yearly(data, fn_year=op.itemgetter(0)))
+    result = list(rain.iter_yearly(data, fn_event_year=lambda e: e[0][0]))
     assert list(map(op.itemgetter(0), result)) == list(range(2010, 2021))
     assert all(map(lambda y: 0 == len(y), map(op.itemgetter(1), result)))
 
-    data   = [((2010,), (2010,)), ((2011,),)]
-    result = list(rain.iter_yearly(data, fn_year=op.itemgetter(0)))
-    assert result[0] == (2010, (((2010,),), ((2010,),)))
+    data   = [((2010,), (2011,)), ((2011,),)]
+    result = list(rain.iter_yearly(data, fn_event_year=lambda e: e[0][0]))
+    assert result[0] == (2010, (((2010,), ((2011,))),))
+    #^ The aggregation is done by the first element in events
     assert result[1] == (2011, (((2011,),),))
     assert result[2] == (2012, tuple())
     assert all(map(lambda y: 0 == len(y), map(op.itemgetter(1), result[3:])))
@@ -133,25 +134,24 @@ def test_iter_yearly():
 
 def test_iter_monthly():
     data   = []
-    result = list(rain.iter_monthly(data, fn_month=op.itemgetter(0)))
+    result = list(rain.iter_monthly(data, fn_event_month=lambda e: e[0][0]))
     assert len(result) == 0
 
-    data = [(2010, ([(1,)], [(2,)])),]
-    result = list(rain.iter_monthly(data, fn_month=op.itemgetter(0)))
+    data = [(2010, (((1,), ((2,))),))]
+    result = list(rain.iter_monthly(data, fn_event_month=lambda e: e[0][0]))
     assert len(result) == 12
-    assert result[0] == (2010, 1, (((1,),),))
-    assert result[1] == (2010, 2, (((2,),),))
-    assert all(map(lambda m: 0 == len(m[2]), result[2:]))
+    assert result[0] == (2010, 1, (((1,), (2,)),))
+    #^ The aggregation is done by the first element in events
+    assert all(map(lambda m: 0 == len(m[2]), result[1:]))
 
     data = [
-        (2010, ([(1,)], [(2,)])),
-        (2011, ([(1,)],)),
+        (2010, (((1,), ((2,))),)),
+        (2011, (((1,),),)),
     ]
-    result = list(rain.iter_monthly(data, fn_month=op.itemgetter(0)))
+    result = list(rain.iter_monthly(data, fn_event_month=lambda e: e[0][0]))
     assert len(result) == 24
-    assert result[0] == (2010, 1, (((1,),),))
-    assert result[1] == (2010, 2, (((2,),),))
-    assert all(map(lambda m: 0 == len(m[2]), result[2:12]))
+    assert result[0] == (2010, 1, (((1,), (2,)),))
+    assert all(map(lambda m: 0 == len(m[2]), result[1:12]))
     assert result[12] == (2011, 1, (((1,),),))
     assert all(map(lambda m: 0 == len(m[2]), result[13:]))
 
