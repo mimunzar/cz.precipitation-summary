@@ -137,23 +137,13 @@ def test_iter_yearly():
 def test_iter_monthly():
     data   = []
     result = list(rain.iter_monthly(data, fn_event_month=lambda e: e[0][0]))
-    assert len(result) == 0
-
-    data = [(2010, (((1,), ((2,))),))]
-    result = list(rain.iter_monthly(data, fn_event_month=lambda e: e[0][0]))
     assert len(result) == 12
-    assert result[0] == (2010, 1, (((1,), (2,)),))
-    #^ The aggregation is done by the first element in events
-    assert all(map(lambda m: 0 == len(m[2]), result[1:]))
 
-    data = [
-        (2010, (((1,), ((2,))),)),
-        (2011, (((1,),),)),
-    ]
+    data   = [((1,), (2,)), ((2,),)]
     result = list(rain.iter_monthly(data, fn_event_month=lambda e: e[0][0]))
-    assert len(result) == 24
-    assert result[0] == (2010, 1, (((1,), (2,)),))
-    assert all(map(lambda m: 0 == len(m[2]), result[1:12]))
-    assert result[12] == (2011, 1, (((1,),),))
-    assert all(map(lambda m: 0 == len(m[2]), result[13:]))
+    assert result[0] == (1, (((1,), (2,)),))
+    assert result[1] == (2, (((2,),),))
+    assert result[2] == (3, tuple())
+    #^ The aggregation is done by the first element in events
+    assert all(map(lambda m: 0 == len(m[1]), result[2:]))
 

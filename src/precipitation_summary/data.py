@@ -39,15 +39,6 @@ def from_workbook(fpath):
     return (worksheet['A1'].value, iter_parsed(parse_data(data_it)))
 
 
-def make_station_formatter(fields, fn_start_time):
-    delta  = dt.timedelta(minutes=10)
-    offset = int((dt.datetime(2010, 1, 1) - dt.datetime(1970, 1, 1))/delta)
-    def formatter(idx, val):
-        d = dt.datetime.fromtimestamp((offset + fn_start_time(val))*delta.seconds)
-        return (fn(idx, d, val) for fn in fields.values())
-    return formatter
-
-
 def make_cell(worksheet, cell_style, val):
     cell       = xl.cell.Cell(worksheet)
     cell.value = val
@@ -68,17 +59,8 @@ def write_sheet_labels(worksheet, labels_it):
     set_column_width(worksheet, labels_it)
 
 
-def make_fill(color):
+def make_solid_fill(color):
     return xl.styles.PatternFill('solid', fgColor=color)
-
-
-def write_sheet_data(worksheet, fn_iter_row_vals, event_it):
-    style   = lambda fill: {'fill': fill, 'alignment': LEFT_ALIGN}
-    cell    = lambda fill, x: make_cell(worksheet, style(fill), x)
-    fill_it = it.cycle((make_fill('d5f5c6'), make_fill('f2c9a3')))
-    for i, (fill, event) in enumerate(zip(fill_it, event_it), start=1):
-        for val_it in fn_iter_row_vals(i, event):
-            worksheet.append(tuple(map(ft.partial(cell, fill), val_it)))
 
 
 def write_timeline_sheet(worksheet, station, event_it):
@@ -93,7 +75,7 @@ def write_timeline_sheet(worksheet, station, event_it):
     })
     write_sheet_labels(worksheet, [station])
     write_sheet_labels(worksheet, fields.keys())
-    fill_it = it.cycle((make_fill('d5f5c6'), make_fill('f2c9a3')))
+    fill_it = it.cycle((make_solid_fill('d5f5c6'), make_solid_fill('f2c9a3')))
     for i, e in enumerate(event_it, start=1):
         style = {'alignment': LEFT_ALIGN, 'fill': next(fill_it)}
         vals  = lambda it: map(lambda fn: fn(i, it), fields.values())
@@ -104,29 +86,31 @@ def write_timeline_sheet(worksheet, station, event_it):
 
 def write_param_sheet(worksheet, station, event_it):
     fields = cl.OrderedDict({
-        'id'                 : lambda i, _, __: i,
-        'datum [YYYY-MM-DD]' : lambda _, d, __: f'{d.year:04}-{d.month:02}-{d.day:02}',
-        'rok'                : lambda _, d, __: d.year,
-        'měsíc'              : lambda _, d, __: d.month,
-        'den'                : lambda _, d, __: d.day,
-        'doba trvání [hod]'  : lambda _, __, e: \
-                round((len(e)*dt.timedelta(minutes=10))/dt.timedelta(hours=1), 2),
-        'celkový úhrn [mm]'  : lambda _, __, e: \
+        'id'                 : lambda i, _: i,
+        'datum [YYYY-MM-DD]' : lambda _, e: f'{e[0][2].year:04}-{e[0][2].month:02}-{e[0][2].day:02}',
+        'rok'                : lambda _, e: e[0][2].year,
+        'měsíc'              : lambda _, e: e[0][2].month,
+        'den'                : lambda _, e: e[0][2].day,
+        'doba trvání [hod]'  : lambda _, e: \
+                round((e[-1][2] - e[0][2])/dt.timedelta(hours=1), 2),
+        'celkový úhrn [mm]'  : lambda _, e: \
                 round(rain.total_amount(e), 2),
-        '20 min. max. [mm]'  : lambda _, __, e: \
+        '20 min. max. [mm]'  : lambda _, e: \
                 round(rain.total_max_period(util.minutes(20), e), 2),
-        '30 min. max. [mm]'  : lambda _, __, e: \
+        '30 min. max. [mm]'  : lambda _, e: \
                 round(rain.total_max_period(util.minutes(30), e), 2),
-        'kin. energie [MJ]'  : lambda _, __, e: \
+        'kin. energie [MJ]'  : lambda _, e: \
                 round(rain.total_kinetic_energy(e), 4),
-        'erozivita [R]'      : lambda _, __, e: \
+        'erozivita [R]'      : lambda _, e: \
                 round(rain.total_erosivity(util.minutes(30), e), 4),
     })
     write_sheet_labels(worksheet, [station])
     write_sheet_labels(worksheet, fields.keys())
-    formatter   = make_station_formatter(fields, lambda e: e[0][0])
-    iter_events = lambda idx, event_it: [formatter(idx, event_it)]
-    write_sheet_data(worksheet, iter_events, event_it)
+    fill_it = it.cycle((make_solid_fill('d5f5c6'), make_solid_fill('f2c9a3')))
+    for i, e in enumerate(event_it, start=1):
+        style = {'alignment': LEFT_ALIGN, 'fill': next(fill_it)}
+        vals  = map(lambda fn: fn(i, e), fields.values())
+        worksheet.append(tuple(map(ft.partial(make_cell, worksheet, style), vals)))
 
 
 def write_station_workbook(workbook, name, station, event_it):
@@ -167,7 +151,7 @@ def make_append_stat_sheet(worksheet, heading):
     })
     write_sheet_labels(worksheet, [heading])
     write_sheet_labels(worksheet, fields.keys())
-    fill_it = it.cycle((make_fill('d5f5c6'), make_fill('f2c9a3')))
+    fill_it = it.cycle((make_solid_fill('d5f5c6'), make_solid_fill('f2c9a3')))
     def append_stat_sheet(idx, station, event_it):
         style = {'alignment': LEFT_ALIGN, 'fill': next(fill_it)}
         vals  = map(lambda fn: fn(idx, station, event_it), fields.values())
@@ -188,7 +172,7 @@ def make_append_montly_stat_sheet(worksheet, heading):
     })
     write_sheet_labels(worksheet, [heading])
     write_sheet_labels(worksheet, fields.keys())
-    fill_it = it.cycle((make_fill('d5f5c6'), make_fill('f2c9a3')))
+    fill_it = it.cycle((make_solid_fill('d5f5c6'), make_solid_fill('f2c9a3')))
     def append_montly_stat_sheet(idx, station, monthly_it):
         style = lambda: {'alignment': LEFT_ALIGN, 'fill': next(fill_it)}
         vals  = lambda it: map(lambda fn: fn(idx, station, it), fields.values())

@@ -105,12 +105,13 @@ EVENT_MONTH = lambda e: TO_UTC_DATE(e[0]).month
 
 def iter_yearly(events_it, fn_event_year=EVENT_YEAR):
     grouped  = it.groupby(events_it, key=fn_event_year)
-    year     = cl.defaultdict(tuple, {k: tuple(l) for k, l in grouped})
-    return ((y, year[y]) for y in range(2010, 2021))
+    years    = cl.defaultdict(tuple, {k: tuple(l) for k, l in grouped})
+    return ((y, years[y]) for y in range(2010, 2021))
 
 
 def iter_monthly(events_it, fn_event_month=EVENT_MONTH):
-    grouped  = it.groupby(sorted(events_it, key=fn_event_month), key=fn_event_month)
-    month    = cl.defaultdict(tuple, {k: tuple(l) for k, l in grouped})
-    return ((m, month[m]) for m in range(1, 13))
+    by_month = sorted(events_it, key=fn_event_month)
+    grouped  = it.groupby(by_month, key=fn_event_month)
+    months   = cl.defaultdict(tuple, {k: tuple(l) for k, l in grouped})
+    return ((m, months[m]) for m in range(1, 13))
 
