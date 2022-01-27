@@ -179,13 +179,12 @@ def make_append_montly_stat_sheet(worksheet, heading):
     fields = cl.OrderedDict({
         'id'                       : lambda i, _, __: i,
         'stanice'                  : lambda _, s, __: s,
-        'rok'                      : lambda _, __, m: m[0],
-        'měsíc'                    : lambda _, __, m: m[1],
-        'počet srážek za měsíc'    : lambda _, __, m: len(m[2]),
+        'měsíc'                    : lambda _, __, m: m[0],
+        'počet srážek za měsíc'    : lambda _, __, m: len(m[1]),
         'suma SRA10M [mm/měsíc]'   : lambda _, __, m: \
-                round(sum(map(rain.total_amount, m[2])), 2),
+                round(sum(map(rain.total_amount, m[1])), 2),
         'suma erozivity [R/měsíc]' : lambda _, __, m: \
-                round(sum(map(ft.partial(rain.total_erosivity, util.minutes(30)), m[2])), 4),
+                round(sum(map(ft.partial(rain.total_erosivity, util.minutes(30)), m[1])), 4),
     })
     write_sheet_labels(worksheet, [heading])
     write_sheet_labels(worksheet, fields.keys())
@@ -207,11 +206,10 @@ def make_append_stat_workbook(workbook, name, heading):
     monthly_stat_sheet       = workbook.create_sheet()
     monthly_stat_sheet.title = f'{name}_monthly'
     append_montly_stat_sheet = make_append_montly_stat_sheet(monthly_stat_sheet, heading)
-    iter_monthly             = lambda event_it: rain.iter_monthly(rain.iter_yearly(event_it))
     def append_stat_workbook(idx, station, event_it):
         event_it = tuple(event_it)
         append_stat_sheet       (idx, station, event_it)
-        append_montly_stat_sheet(idx, station, iter_monthly(event_it))
+        append_montly_stat_sheet(idx, station, rain.iter_monthly(event_it))
     return append_stat_workbook
 
 
