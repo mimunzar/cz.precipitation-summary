@@ -152,10 +152,14 @@ def to_station_workbook(fpath, station, events_it, mid_events_it, heavy_events_i
 
 def make_append_stat_sheet(worksheet, heading):
     fields = cl.OrderedDict({
-        'id'                     : lambda i, _, __: i,
-        'stanice'                : lambda _, s, __: s,
-        'počet srážek za 10let'  : lambda _, __, e: len(e),
-        'suma SRA10M [mm/10let]' : lambda _, __, e: round(sum(map(rain.total_amount, e)), 2),
+        'id'                       : lambda i, _, __: i,
+        'stanice'                  : lambda _, s, __: s,
+        'počet srážek za 10let'    : lambda _, __, e: len(e),
+        'suma SRA10M [mm/10let]'   : lambda _, __, e: \
+                round(sum(map(rain.total_amount, e)), 2),
+        'suma erozivity [R/10let]' : lambda _, __, e: \
+                round(sum(map(ft.partial(rain.total_erosivity, util.minutes(30)), e)), 4),
+
     })
     write_sheet_labels(worksheet, [heading])
     write_sheet_labels(worksheet, fields.keys())
@@ -169,13 +173,15 @@ def make_append_stat_sheet(worksheet, heading):
 
 def make_append_montly_stat_sheet(worksheet, heading):
     fields = cl.OrderedDict({
-        'id'                     : lambda i, _, __: i,
-        'stanice'                : lambda _, s, __: s,
-        'rok'                    : lambda _, __, m: m[0],
-        'měsíc'                  : lambda _, __, m: m[1],
-        'počet srážek za měsíc'  : lambda _, __, m: len(m[2]),
-        'suma SRA10M [mm/měsíc]' : lambda _, __, m: \
-                round(sum(map(rain.total_amount, m[2])), 2)
+        'id'                       : lambda i, _, __: i,
+        'stanice'                  : lambda _, s, __: s,
+        'rok'                      : lambda _, __, m: m[0],
+        'měsíc'                    : lambda _, __, m: m[1],
+        'počet srážek za měsíc'    : lambda _, __, m: len(m[2]),
+        'suma SRA10M [mm/měsíc]'   : lambda _, __, m: \
+                round(sum(map(rain.total_amount, m[2])), 2),
+        'suma erozivity [R/měsíc]' : lambda _, __, m: \
+                round(sum(map(ft.partial(rain.total_erosivity, util.minutes(30)), m[2])), 4),
     })
     write_sheet_labels(worksheet, [heading])
     write_sheet_labels(worksheet, fields.keys())
