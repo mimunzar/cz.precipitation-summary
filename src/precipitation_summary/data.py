@@ -83,19 +83,23 @@ def write_sheet_data(worksheet, fn_iter_row_vals, event_it):
 
 def write_timeline_sheet(worksheet, station, event_it):
     fields = cl.OrderedDict({
-        'id'                 : lambda i, _, __: i,
-        'datum [YYYY-MM-DD]' : lambda _, d, __: f'{d.year:04}-{d.month:02}-{d.day:02}',
-        'rok'                : lambda _, d, __: d.year,
-        'měsíc'              : lambda _, d, __: d.month,
-        'den'                : lambda _, d, __: d.day,
-        'termín [HH:MM]'     : lambda _, d, __: f'{d.hour:02}:{d.minute:02}',
-        'SRA10M [mm/10min.]' : lambda _, __, r: r[1],
+        'id'                 : lambda i, _: i,
+        'datum [YYYY-MM-DD]' : lambda _, d: f'{d[2].year:04}-{d[2].month:02}-{d[2].day:02}',
+        'rok'                : lambda _, d: d[2].year,
+        'měsíc'              : lambda _, d: d[2].month,
+        'den'                : lambda _, d: d[2].day,
+        'termín [HH:MM]'     : lambda _, d: f'{d[2].hour:02}:{d[2].minute:02}',
+        'SRA10M [mm/10min.]' : lambda _, d: d[1],
     })
     write_sheet_labels(worksheet, [station])
     write_sheet_labels(worksheet, fields.keys())
-    formatter   = make_station_formatter(fields, lambda v: v[0])
-    iter_sra10m = lambda idx, event_it: (formatter(idx, v) for v in event_it)
-    write_sheet_data(worksheet, iter_sra10m, event_it)
+    fill_it = it.cycle((make_fill('d5f5c6'), make_fill('f2c9a3')))
+    for i, e in enumerate(event_it, start=1):
+        style = {'alignment': LEFT_ALIGN, 'fill': next(fill_it)}
+        vals  = lambda it: map(lambda fn: fn(i, it), fields.values())
+        cells = lambda it: map(ft.partial(make_cell, worksheet, style), it)
+        for row in map(cells, map(vals, e)):
+            worksheet.append(tuple(row))
 
 
 def write_param_sheet(worksheet, station, event_it):

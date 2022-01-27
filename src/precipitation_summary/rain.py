@@ -44,9 +44,10 @@ def iter_gt_periods(amount, period, data_it):
     return filter(has_total_amount, events)
 
 
-def iter_consecutive_events(fn_order, events_it):
-    ordering = lambda ie: ie[0] - fn_order(ie[1])
+def iter_consecutive_events(events_it):
+    ordering = lambda e: e[0] - e[1][0][0]
     groups   = it.groupby(enumerate(events_it), key=ordering)
+    #^ Group by an index and a first event's index
     return (tuple(map(op.itemgetter(1), g)) for _, g in groups)
 
 
@@ -62,11 +63,26 @@ def trim_event(data_it):
     return reversed(trim_start(reversed(trim_start(data_it))))
 
 
-def iter_rains(amount, period, data_it):
+def make_data_utc_date():
+    delta_10m = dt.timedelta(minutes=10)
+    epoch_10m = (dt.datetime(2010, 1, 1) - dt.datetime(1970, 1, 1))//delta_10m
+    utc_date  = lambda secs: dt.datetime.fromtimestamp(secs, dt.timezone.utc)
+    return lambda d: utc_date((epoch_10m + d[0])*delta_10m.seconds)
+
+
+def iter_events(amount, period, data_it):
     rain_events  = iter_gt_periods(amount, period, data_it)
-    consecutives = iter_consecutive_events(lambda e: e[0][0], rain_events)
-    #^ Group by an index and a first event's index
-    return (tuple(trim_event(merge_consecutive_events(c))) for c in consecutives)
+    consecutives = iter_consecutive_events(rain_events)
+    return map(lambda c: trim_event(merge_consecutive_events(c)), consecutives)
+
+
+TO_UTC_DATE = make_data_utc_date()
+
+
+def iter_rains(amount, period, data_it, fn_data_date=TO_UTC_DATE):
+    events_it = iter_events(amount, period, data_it)
+    add_date  = lambda d: (d[0], d[1], fn_data_date(d))
+    return map(lambda e: tuple(map(add_date, e)), events_it)
 
 
 def is_mid_rain(data_it):
@@ -83,14 +99,6 @@ def is_heavy_rain(data_it):
     return exceeded_amount and intense_period
 
 
-def make_data_utc_date():
-    delta_10m = dt.timedelta(minutes=10)
-    epoch_10m = (dt.datetime(2010, 1, 1) - dt.datetime(1970, 1, 1))//delta_10m
-    cest_date = lambda secs: dt.datetime.fromtimestamp(secs, dt.timezone.utc)
-    return lambda d: cest_date((epoch_10m + d[0])*delta_10m.seconds)
-
-
-TO_UTC_DATE = make_data_utc_date()
 EVENT_YEAR  = lambda e: TO_UTC_DATE(e[0]).year
 EVENT_MONTH = lambda e: TO_UTC_DATE(e[0]).month
 
