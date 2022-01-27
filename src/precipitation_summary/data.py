@@ -147,7 +147,6 @@ def make_append_stat_sheet(worksheet, heading):
                 round(sum(map(rain.total_amount, e)), 2),
         'suma erozivity [R/10let]' : lambda _, __, e: \
                 round(sum(map(ft.partial(rain.total_erosivity, util.minutes(30)), e)), 4),
-
     })
     write_sheet_labels(worksheet, [heading])
     write_sheet_labels(worksheet, fields.keys())

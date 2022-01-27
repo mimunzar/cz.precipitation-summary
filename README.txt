@@ -37,9 +37,3 @@ Possible Improvements
     - Support configuration of data locations in input sheets
     - Support parallel processing
 
-
-Implementation TODO:
--------------------
-    - Use date computation from rain module in data module
-    - Remove data.write_sheet_data
-
