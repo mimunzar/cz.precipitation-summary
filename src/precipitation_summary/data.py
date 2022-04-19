@@ -14,7 +14,6 @@ import src.precipitation_summary.util as util
 
 LEFT_ALIGN = xl.styles.Alignment(horizontal='left')
 
-
 def parse_data(rain_row_it):
     result    = cl.defaultdict(list)
     cell_val  = lambda c: c.value or 0

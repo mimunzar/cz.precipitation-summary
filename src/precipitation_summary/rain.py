@@ -78,7 +78,6 @@ def iter_events(amount, period, data_it):
 
 TO_UTC_DATE = make_data_utc_date()
 
-
 def iter_rains(amount, period, data_it, fn_data_date=TO_UTC_DATE):
     events_it = iter_events(amount, period, data_it)
     add_date  = lambda d: (d[0], d[1], fn_data_date(d))
@@ -101,7 +100,6 @@ def is_heavy_rain(data_it):
 
 EVENT_YEAR  = lambda e: TO_UTC_DATE(e[0]).year
 EVENT_MONTH = lambda e: TO_UTC_DATE(e[0]).month
-
 
 def iter_yearly(events_it, fn_event_year=EVENT_YEAR):
     grouped  = it.groupby(events_it, key=fn_event_year)

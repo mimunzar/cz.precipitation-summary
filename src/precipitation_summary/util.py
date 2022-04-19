@@ -8,7 +8,6 @@ import operator    as op
 minutes = lambda n: n//10
 hours   = lambda n: n*minutes(60)
 
-
 def sliding_window(n, iterable):
     iterable = iter(iterable)
     window   = cl.deque(it.islice(iterable, n), maxlen=n)
