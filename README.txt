@@ -12,28 +12,28 @@ Installation
 To install the tool navigate to the project's folder  and  issue  the  following
 command:
 
-    conda env create -f environment.yml
+    docker build . -t cz.chmu.precipitation_summary
 
-Note: The program was developed with Python 3.9
+The command builds a container with a name "cz.chmu.precipitation_summary".
 
 
 Usage
 -----
 
-To make statistics from input files located in I_FOLDER issue the following
-command:
+To run the program, mount a folder containing an input data into  the  container
+and provide the path to the folder in the container.  This can be done with  the
+following command:
 
-    python -m src.precipitation_summary.make_summary \
-        -i <I_FOLDER> \
-        -o <O_FOLDER>
+    docker run -v $(pwd)/data:/mnt -t cz.chmu.precipitation_summary /mnt/data
 
-The program writes the statistic files to O_FOLDER.
+Where "$(pwd)/data:/mnt" is an example of a folder containing input  data.   The
+folder is mounted into the container's "/mnt".  Results  are  written  into  the
+same folder to files with "stat.xlsx" suffix.
 
 
 Possible Improvements
 ---------------------
 
     - Support additional statistics
-    - Support configuration of data locations in input sheets
     - Support parallel processing
 

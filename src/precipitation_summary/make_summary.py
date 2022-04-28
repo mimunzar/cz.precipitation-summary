@@ -11,19 +11,16 @@ import src.precipitation_summary.util as util
 
 
 def parse_args(args_it):
-    parser = argparse.ArgumentParser(
-            description='Allows to create statistics about heavy rains')
-    parser.add_argument('-i', '--input_dir',
-            required=True, help='The directory which contains measurement files')
-    parser.add_argument('-o', '--output_dir',
-            required=True, help='The directory which will contain statistic files')
-    parsed = vars(parser.parse_args(args_it))
-    return (parsed['input_dir'], parsed['output_dir'])
+    parser = argparse.ArgumentParser()
+    parser.add_argument('input-dir', help='The directory which contains measurement files',
+            metavar='DIR')
+    return vars(parser.parse_args(args_it))
 
 
 def iter_input_filenames(i_dir):
     is_excel_file = lambda s: s.endswith('.xlsx')
-    return filter(is_excel_file, os.listdir(i_dir))
+    is_not_stat   = lambda s: not s.endswith('stat.xlsx')
+    return filter(is_not_stat, filter(is_excel_file, os.listdir(i_dir)))
 
 
 def output_filename(filename):
@@ -31,17 +28,17 @@ def output_filename(filename):
     return f'{path}.stat{extension}'
 
 
-def iter_pending_files(i_dir, o_dir):
+def iter_pending_files(i_dir):
     input_path  = lambda s: os.path.join(i_dir, s)
-    output_path = lambda s: os.path.join(o_dir, output_filename(s))
+    output_path = lambda s: os.path.join(i_dir, output_filename(s))
     input_files = list(iter_input_filenames(i_dir))
     total_files = len(input_files)
     return ((input_path(f), output_path(f), total_files) for f in input_files)
 
 
-def process_directory(i_dir, o_dir):
+def process_directory(i_dir):
     to_station_workbook = data.to_station_workbook
-    to_stat_workbook    = data.make_to_stat_workbook(os.path.join(o_dir, 'stat.xlsx'))
+    to_stat_workbook    = data.make_to_stat_workbook(os.path.join(i_dir, 'stat.xlsx'))
     def process_file(done, pending_files_it):
         i_path, o_path, total = pending_files_it
         current_file = os.path.basename(i_path)
@@ -57,12 +54,11 @@ def process_directory(i_dir, o_dir):
         to_stat_workbook(done, station, rains_it, mid_rains_it, heavy_rains_it)
         print(f'{progress_bar(done)} ({current_file})', end='\r')
         return done
-    return ft.reduce(process_file, iter_pending_files(i_dir, o_dir), 0)
+    return ft.reduce(process_file, iter_pending_files(i_dir), 0)
 
 
 if __name__ == '__main__':
-    i_dir, o_dir = parse_args(sys.argv[1:])
-    os.makedirs(o_dir, exist_ok=True)
-    process_directory(i_dir, o_dir)
+    args = parse_args(sys.argv[1:])
+    process_directory(args['input-dir'])
     print()
 
